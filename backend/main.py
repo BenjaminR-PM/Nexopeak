@@ -11,7 +11,6 @@ from app.core.config import settings
 from app.core.database import engine, Base, get_db
 from app.api.v1.api import api_router
 from app.core.security import verify_token
-from app.models import user, organization, connection
 
 # Load environment variables
 load_dotenv()
@@ -23,8 +22,7 @@ security = HTTPBearer()
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting up Nexopeak API...")
-    # Create database tables
-    Base.metadata.create_all(bind=engine)
+    # Don't create tables during startup - let the app handle it
     yield
     # Shutdown
     print("Shutting down Nexopeak API...")

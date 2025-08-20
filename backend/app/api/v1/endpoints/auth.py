@@ -1,202 +1,168 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import Optional
-import logging
-from sqlalchemy import func
-
 from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, get_password_hash
+from app.core.security import create_access_token, verify_token, get_password_hash, verify_password
 from app.models.user import User
 from app.models.organization import Organization
-from app.schemas.auth import UserCreate, UserLogin, Token, GoogleOAuthRequest
+from app.schemas.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.services.auth_service import AuthService
-
-logger = logging.getLogger(__name__)
+from typing import Optional
 
 router = APIRouter()
-auth_service = AuthService()
+security = HTTPBearer()
 
-@router.post("/register", response_model=dict)
-async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user and organization."""
+@router.post("/auth/register", response_model=UserResponse)
+async def register(user_create: UserCreate, db: Session = Depends(get_db)):
+    """Register a new user"""
     try:
         # Check if user already exists
-        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        existing_user = AuthService.get_user_by_email(db, user_create.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
             )
-
-        # Create organization
-        org = Organization(
-            name=user_data.organization_name,
-            slug=user_data.organization_name.lower().replace(" ", "-"),
-            industry=user_data.industry,
-            size=user_data.size
-        )
-        db.add(org)
-        db.flush()  # Get the org ID
-
-        # Create user
-        user = User(
-            org_id=org.id,
-            email=user_data.email,
-            first_name=user_data.first_name,
-            last_name=user_data.last_name,
-            password_hash=get_password_hash(user_data.password),
-            role="admin"  # First user is admin
-        )
-        db.add(user)
-        db.commit()
-
-        logger.info(f"New user registered: {user.email} for organization: {org.name}")
         
-        return {
-            "message": "User registered successfully",
-            "user_id": str(user.id),
-            "org_id": str(org.id)
-        }
-    except Exception as e:
-        db.rollback()
-        logger.error(f"User registration failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed. Please try again."
-        )
-
-@router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """Login with email and password."""
-    try:
-        user = db.query(User).filter(User.email == form_data.username).first()
-        if not user or not verify_password(form_data.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password"
-            )
-
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Account is deactivated"
-            )
-
-        # Update last login
-        user.last_login_at = func.now()
-        db.commit()
-
-        # Create access token
-        access_token = create_access_token(
-            data={"sub": str(user.id), "email": user.email, "org_id": str(user.org_id)}
-        )
-
-        logger.info(f"User logged in: {user.email}")
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "name": user.full_name,
-                "role": user.role,
-                "org_id": str(user.org_id)
-            }
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Login failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed. Please try again."
-        )
-
-@router.post("/google/oauth")
-async def google_oauth(request: GoogleOAuthRequest, db: Session = Depends(get_db)):
-    """Handle Google OAuth authentication."""
-    try:
-        # Verify Google ID token
-        user_info = await auth_service.verify_google_token(request.id_token)
-        
-        # Check if user exists
-        user = db.query(User).filter(User.email == user_info["email"]).first()
-        
-        if not user:
-            # Create new user and organization
+        # Create organization if org_id is not provided
+        if not user_create.org_id:
             org = Organization(
-                name=user_info.get("organization", "My Organization"),
-                slug=user_info.get("organization", "my-organization").lower().replace(" ", "-")
+                name=f"{user_create.name}'s Organization",
+                domain=user_create.email.split('@')[1] if '@' in user_create.email else "demo.com"
             )
             db.add(org)
-            db.flush()
-
-            user = User(
-                org_id=org.id,
-                email=user_info["email"],
-                first_name=user_info.get("given_name", ""),
-                last_name=user_info.get("family_name", ""),
-                role="admin",
-                is_verified=True
-            )
-            db.add(user)
             db.commit()
-
-        # Create access token
-        access_token = create_access_token(
-            data={"sub": str(user.id), "email": user.email, "org_id": str(user.org_id)}
-        )
-
-        logger.info(f"Google OAuth successful for user: {user.email}")
+            db.refresh(org)
+            user_create.org_id = org.id
         
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "name": user.full_name,
-                "role": user.role,
-                "org_id": str(user.org_id)
-            }
-        }
-    except Exception as e:
-        logger.error(f"Google OAuth failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Google authentication failed"
+        # Create user
+        user = AuthService.create_user(db, user_create)
+        return UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            org_id=user.org_id
         )
-
-@router.post("/refresh")
-async def refresh_token(request: Request, db: Session = Depends(get_db)):
-    """Refresh access token."""
-    try:
-        # Extract token from request
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header"
-            )
-        
-        token = auth_header.split(" ")[1]
-        # TODO: Implement token refresh logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Token refresh not implemented yet"
-        )
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Token refresh failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token refresh failed"
+            detail=f"Registration failed: {str(e)}"
         )
 
-@router.post("/logout")
-async def logout():
-    """Logout user (client-side token removal)."""
-    return {"message": "Successfully logged out"}
+@router.post("/auth/login", response_model=TokenResponse)
+async def login(user_login: UserLogin, db: Session = Depends(get_db)):
+    """Login user and return access token"""
+    try:
+        user = AuthService.authenticate_user(db, user_login.email, user_login.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        access_token = AuthService.create_user_token(user)
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                role=user.role,
+                org_id=user.org_id
+            )
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}"
+        )
+
+@router.post("/auth/demo", response_model=TokenResponse)
+async def create_demo_account(db: Session = Depends(get_db)):
+    """Create a demo account for testing purposes"""
+    try:
+        # Check if demo user already exists
+        demo_email = "demo@nexopeak.com"
+        existing_user = AuthService.get_user_by_email(db, demo_email)
+        
+        if existing_user:
+            # Return existing demo user token
+            access_token = AuthService.create_user_token(existing_user)
+            return TokenResponse(
+                access_token=access_token,
+                token_type="bearer",
+                user=UserResponse(
+                    id=existing_user.id,
+                    email=existing_user.email,
+                    name=existing_user.name,
+                    role=existing_user.role,
+                    org_id=existing_user.org_id
+                )
+            )
+        
+        # Create demo organization
+        demo_org = Organization(
+            name="Demo Organization",
+            domain="nexopeak.com"
+        )
+        db.add(demo_org)
+        db.commit()
+        db.refresh(demo_org)
+        
+        # Create demo user
+        demo_user = User(
+            email=demo_email,
+            name="Demo User",
+            hashed_password=get_password_hash("demo123"),
+            role="admin",
+            org_id=demo_org.id
+        )
+        db.add(demo_user)
+        db.commit()
+        db.refresh(demo_user)
+        
+        # Return demo user token
+        access_token = AuthService.create_user_token(demo_user)
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=demo_user.id,
+                email=demo_user.email,
+                name=demo_user.name,
+                role=demo_user.role,
+                org_id=demo_user.org_id
+            )
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Demo account creation failed: {str(e)}"
+        )
+
+@router.get("/auth/me", response_model=UserResponse)
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    """Get current user information"""
+    try:
+        payload = verify_token(credentials.credentials)
+        user = AuthService.get_user_by_email(db, payload.get("sub"))
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            org_id=user.org_id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
