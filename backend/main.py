@@ -5,11 +5,13 @@ from contextlib import asynccontextmanager
 import uvicorn
 from dotenv import load_dotenv
 import os
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine, Base, get_db
 from app.api.v1.api import api_router
 from app.core.security import verify_token
+from app.models import user, organization, connection
 
 # Load environment variables
 load_dotenv()
@@ -30,8 +32,8 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="Nexopeak API",
-    description="Digital Marketing Analytics MVP API",
-    version="0.1.0",
+    description="Digital Marketing Analytics Platform",
+    version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
@@ -40,7 +42,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_HOSTS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,16 +66,21 @@ app.include_router(api_router, prefix="/api/v1")
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "nexopeak-api"}
+    return {"status": "healthy", "message": "Nexopeak API is running"}
 
 # Root endpoint
 @app.get("/")
 async def root():
-    return {
-        "message": "Welcome to Nexopeak API",
-        "version": "0.1.0",
-        "docs": "/docs"
-    }
+    return {"message": "Welcome to Nexopeak API"}
+
+@app.get("/test-db")
+async def test_database(db: Session = Depends(get_db)):
+    try:
+        # Simple database test
+        db.execute("SELECT 1")
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "database": "error", "message": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(
