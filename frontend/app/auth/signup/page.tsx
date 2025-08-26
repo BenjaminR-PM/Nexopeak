@@ -79,7 +79,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-primary-600 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto h-16 w-16 bg-orange-600 rounded-full flex items-center justify-center mb-4">
             <Zap className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -112,7 +112,7 @@ export default function SignupPage() {
           <button
             onClick={handleGoogleSignup}
             disabled={isOAuthLoading}
-            className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors duration-200"
+            className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors duration-200"
           >
             {isOAuthLoading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-700"></div>
@@ -153,7 +153,7 @@ export default function SignupPage() {
                     type="text"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="form-input pl-10"
+                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     placeholder="John"
                     required
                   />
@@ -171,7 +171,7 @@ export default function SignupPage() {
                     type="text"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="form-input pl-10"
+                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     placeholder="Doe"
                     required
                   />
@@ -226,7 +226,7 @@ export default function SignupPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="form-input pl-10 pr-12"
+                                      className="w-full px-3 py-2 pl-10 pr-12 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                   placeholder="••••••••"
                   required
                 />
@@ -246,12 +246,12 @@ export default function SignupPage() {
                 type="checkbox"
                 checked={formData.acceptTerms}
                 onChange={handleInputChange}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                 required
               />
               <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900">
                 I agree to the{' '}
-                <Link href="/terms" className="text-primary-600 hover:text-primary-500">
+                <Link href="/terms" className="text-orange-600 hover:text-orange-500">
                   Terms and Conditions
                 </Link>
               </label>
@@ -260,7 +260,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-lg py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -279,7 +279,7 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link href="/auth/login" className="font-medium text-primary-600 hover:text-primary-500">
+              <Link href="/auth/login" className="font-medium text-orange-600 hover:text-orange-500">
                 Sign in
               </Link>
             </p>
@@ -289,11 +289,11 @@ export default function SignupPage() {
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
             By creating an account, you agree to our{' '}
-            <a href="#" className="text-primary-600 hover:text-primary-500">
+            <a href="#" className="text-orange-600 hover:text-orange-500">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" className="text-primary-600 hover:text-primary-500">
+            <a href="#" className="text-orange-600 hover:text-orange-500">
               Privacy Policy
             </a>
           </p>
