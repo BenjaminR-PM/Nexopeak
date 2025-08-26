@@ -79,14 +79,19 @@ export default function SignupPage() {
   }
 
   const handleGoogleSignup = async () => {
+    console.log('Google signup clicked!') // Debug log
     setIsOAuthLoading(true)
     
     try {
       // For demo purposes, we'll simulate Google OAuth with a mock token
       // In production, you'd use the Google OAuth library
       const mockToken = Math.random().toString(36).substring(2) + Date.now().toString(36)
+      console.log('Mock token generated:', mockToken) // Debug log
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      console.log('API URL:', apiUrl) // Debug log
+      
+      const response = await fetch(`${apiUrl}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,21 +101,30 @@ export default function SignupPage() {
         }),
       })
 
+      console.log('Response status:', response.status) // Debug log
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('API Error:', errorData) // Debug log
         throw new Error(errorData.detail || 'Google signup failed')
       }
 
       const loginData = await response.json()
+      console.log('Login successful:', loginData.user.email) // Debug log
       
       // Store authentication data
       localStorage.setItem('access_token', loginData.access_token)
       localStorage.setItem('user_data', JSON.stringify(loginData.user))
       
+      alert(`Welcome ${loginData.user.name}! Redirecting to dashboard...`)
+      
       // Redirect to dashboard
-      window.location.href = '/dashboard'
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1000)
       
     } catch (error: any) {
+      console.error('Google signup error:', error) // Debug log
       alert(error.message || 'Google signup failed. Please try again.')
     } finally {
       setIsOAuthLoading(false)
@@ -152,6 +166,7 @@ export default function SignupPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
           {/* Google OAuth Button */}
           <button
+            type="button"
             onClick={handleGoogleSignup}
             disabled={isOAuthLoading}
             className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors duration-200"
@@ -232,7 +247,7 @@ export default function SignupPage() {
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="form-input pl-10"
+                  className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                   placeholder="john@company.com"
                   required
                 />
@@ -250,7 +265,7 @@ export default function SignupPage() {
                   type="text"
                   value={formData.organizationName}
                   onChange={handleInputChange}
-                  className="form-input pl-10"
+                  className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                   placeholder="Acme Corp"
                   required
                 />
