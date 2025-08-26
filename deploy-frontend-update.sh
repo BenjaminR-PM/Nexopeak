@@ -83,8 +83,8 @@ deploy_frontend() {
     TEMP_DIR=$(mktemp -d)
     print_status "Creating temporary deployment directory: $TEMP_DIR"
     
-    # Copy frontend files to temp directory
-    cp -r frontend/* "$TEMP_DIR/"
+    # Copy frontend files to temp directory, excluding node_modules
+    rsync -av --exclude 'node_modules' frontend/ "$TEMP_DIR/"
     
     # Navigate to temp directory
     cd "$TEMP_DIR"

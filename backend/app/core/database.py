@@ -11,10 +11,15 @@ logger = logging.getLogger(__name__)
 
 # Create database engine
 # For development, use SQLite by default
-if settings.DATABASE_URL.startswith("postgresql://"):
+# Handle Heroku's postgres:// URL format
+database_url = settings.DATABASE_URL
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+if database_url.startswith("postgresql://"):
     try:
         engine = create_engine(
-            settings.DATABASE_URL,
+            database_url,
             pool_pre_ping=True,
             pool_recycle=300,
             echo=False,  # Set to True for SQL query logging
