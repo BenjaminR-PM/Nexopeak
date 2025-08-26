@@ -1,19 +1,31 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  MousePointer, 
-  Target,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  Eye,
-  Clock
-} from 'lucide-react'
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  Avatar,
+} from '@mui/material'
+import {
+  BarChart as BarChartIcon,
+  TrendingUp as TrendingUpIcon,
+  People as PeopleIcon,
+  Mouse as MouseIcon,
+  TrackChanges as TargetIcon,
+  CalendarToday as CalendarIcon,
+  TrendingDown as TrendingDownIcon,
+  Schedule as ScheduleIcon,
+} from '@mui/icons-material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
 
 // Mock data - replace with API calls
 const mockKPIData = {
@@ -72,181 +84,270 @@ export default function DashboardPage() {
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <TrendingUp className="h-5 w-5 text-success-600" />
+        return <TrendingUpIcon sx={{ color: '#22c55e' }} />
       case 'warning':
-        return <Target className="h-5 w-5 text-warning-600" />
+        return <TargetIcon sx={{ color: '#f59e0b' }} />
       case 'critical':
-        return <ArrowDownRight className="h-5 w-5 text-danger-600" />
+        return <TrendingDownIcon sx={{ color: '#dc2626' }} />
       default:
-        return <Eye className="h-5 w-5 text-primary-600" />
+        return <TrendingUpIcon sx={{ color: '#f97316' }} />
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'error'
+      case 'medium':
+        return 'warning'
+      case 'low':
+        return 'default'
+      default:
+        return 'default'
     }
   }
 
   const getInsightColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'border-l-success-500 bg-success-50'
+        return '#f0fdf4'
       case 'warning':
-        return 'border-l-warning-500 bg-warning-50'
+        return '#fffbeb'
       case 'critical':
-        return 'border-l-danger-500 bg-danger-50'
+        return '#fef2f2'
       default:
-        return 'border-l-primary-500 bg-primary-50'
+        return '#fef3c7'
+    }
+  }
+
+  const getInsightBorderColor = (type: string) => {
+    switch (type) {
+      case 'success':
+        return '#22c55e'
+      case 'warning':
+        return '#f59e0b'
+      case 'critical':
+        return '#dc2626'
+      default:
+        return '#f97316'
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-600">Performance overview and insights</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <select
-                value={selectedDateRange}
-                onChange={(e) => setSelectedDateRange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="1d">Last 24 hours</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-              </select>
-              <button className="btn-primary">
-                <Calendar className="h-4 w-4 mr-2" />
-                Export Report
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <Box>
+      {/* Page Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+          Dashboard
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
+          Performance overview and insights
+        </Typography>
+        
+        {/* Date Range Selector */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          gap: 2, 
+          alignItems: { xs: 'stretch', sm: 'center' } 
+        }}>
+          <Select
+            value={selectedDateRange}
+            onChange={(e) => setSelectedDateRange(e.target.value)}
+            size="small"
+            sx={{ minWidth: { xs: '100%', sm: 200 } }}
+          >
+            <MenuItem value="1d">Last 24 hours</MenuItem>
+            <MenuItem value="7d">Last 7 days</MenuItem>
+            <MenuItem value="30d">Last 30 days</MenuItem>
+            <MenuItem value="90d">Last 90 days</MenuItem>
+          </Select>
+          <Button
+            variant="contained"
+            startIcon={<CalendarIcon />}
+            sx={{ minWidth: { xs: '100%', sm: 'auto' }, bgcolor: '#f97316' }}
+          >
+            Export Report
+          </Button>
+        </Box>
+      </Box>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{mockKPIData.sessions.value.toLocaleString()}</p>
-              </div>
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-primary-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center">
+      {/* KPI Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                  Total Sessions
+                </Typography>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 700 }}>
+                  {mockKPIData.sessions.value.toLocaleString()}
+                </Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#fef3c7', color: '#f97316' }}>
+                <BarChartIcon />
+              </Avatar>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {mockKPIData.sessions.trend === 'up' ? (
-                <ArrowUpRight className="h-4 w-4 text-success-600 mr-1" />
+                <TrendingUpIcon sx={{ mr: 1, fontSize: 20, color: '#22c55e' }} />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-danger-600 mr-1" />
+                <TrendingDownIcon sx={{ mr: 1, fontSize: 20, color: '#dc2626' }} />
               )}
-              <span className={`text-sm font-medium ${
-                mockKPIData.sessions.trend === 'up' ? 'text-success-600' : 'text-danger-600'
-              }`}>
+              <Typography
+                variant="body2"
+                sx={{ 
+                  fontWeight: 600,
+                  color: mockKPIData.sessions.trend === 'up' ? '#22c55e' : '#dc2626'
+                }}
+              >
                 {mockKPIData.sessions.change}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">vs last period</span>
-            </div>
-          </div>
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', ml: 1 }}>
+                vs last period
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
 
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Engaged Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{mockKPIData.engagedSessions.value.toLocaleString()}</p>
-              </div>
-              <div className="p-2 bg-success-100 rounded-lg">
-                <Users className="h-6 w-6 text-success-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center">
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                  Engaged Sessions
+                </Typography>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 700 }}>
+                  {mockKPIData.engagedSessions.value.toLocaleString()}
+                </Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#f0fdf4', color: '#22c55e' }}>
+                <PeopleIcon />
+              </Avatar>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {mockKPIData.engagedSessions.trend === 'up' ? (
-                <ArrowUpRight className="h-4 w-4 text-success-600 mr-1" />
+                <TrendingUpIcon sx={{ mr: 1, fontSize: 20, color: '#22c55e' }} />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-danger-600 mr-1" />
+                <TrendingDownIcon sx={{ mr: 1, fontSize: 20, color: '#dc2626' }} />
               )}
-              <span className={`text-sm font-medium ${
-                mockKPIData.engagedSessions.trend === 'up' ? 'text-success-600' : 'text-danger-600'
-              }`}>
+              <Typography
+                variant="body2"
+                sx={{ 
+                  fontWeight: 600,
+                  color: mockKPIData.engagedSessions.trend === 'up' ? '#22c55e' : '#dc2626'
+                }}
+              >
                 {mockKPIData.engagedSessions.change}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">vs last period</span>
-            </div>
-          </div>
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', ml: 1 }}>
+                vs last period
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
 
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Conversions</p>
-                <p className="text-2xl font-bold text-gray-900">{mockKPIData.conversions.value}</p>
-              </div>
-              <div className="p-2 bg-warning-100 rounded-lg">
-                <Target className="h-6 w-6 text-warning-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center">
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                  Conversions
+                </Typography>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 700 }}>
+                  {mockKPIData.conversions.value}
+                </Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#fffbeb', color: '#f59e0b' }}>
+                <TargetIcon />
+              </Avatar>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {mockKPIData.conversions.trend === 'up' ? (
-                <ArrowUpRight className="h-4 w-4 text-success-600 mr-1" />
+                <TrendingUpIcon sx={{ mr: 1, fontSize: 20, color: '#22c55e' }} />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-danger-600 mr-1" />
+                <TrendingDownIcon sx={{ mr: 1, fontSize: 20, color: '#dc2626' }} />
               )}
-              <span className={`text-sm font-medium ${
-                mockKPIData.conversions.trend === 'up' ? 'text-success-600' : 'text-danger-600'
-              }`}>
+              <Typography
+                variant="body2"
+                sx={{ 
+                  fontWeight: 600,
+                  color: mockKPIData.conversions.trend === 'up' ? '#22c55e' : '#dc2626'
+                }}
+              >
                 {mockKPIData.conversions.change}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">vs last period</span>
-            </div>
-          </div>
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', ml: 1 }}>
+                vs last period
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
 
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Engagement</p>
-                <p className="text-2xl font-bold text-gray-900">{mockKPIData.engagementTime.value}</p>
-              </div>
-              <div className="p-2 bg-danger-100 rounded-lg">
-                <Clock className="h-6 w-6 text-danger-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center">
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                  Avg. Engagement
+                </Typography>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 700 }}>
+                  {mockKPIData.engagementTime.value}
+                </Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#fef2f2', color: '#dc2626' }}>
+                <ScheduleIcon />
+              </Avatar>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {mockKPIData.engagementTime.trend === 'up' ? (
-                <ArrowUpRight className="h-4 w-4 text-success-600 mr-1" />
+                <TrendingUpIcon sx={{ mr: 1, fontSize: 20, color: '#22c55e' }} />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-danger-600 mr-1" />
+                <TrendingDownIcon sx={{ mr: 1, fontSize: 20, color: '#dc2626' }} />
               )}
-              <span className={`text-sm font-medium ${
-                mockKPIData.engagementTime.trend === 'up' ? 'text-success-600' : 'text-danger-600'
-              }`}>
+              <Typography
+                variant="body2"
+                sx={{ 
+                  fontWeight: 600,
+                  color: mockKPIData.engagementTime.trend === 'up' ? '#22c55e' : '#dc2626'
+                }}
+              >
                 {mockKPIData.engagementTime.change}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">vs last period</span>
-            </div>
-          </div>
-        </div>
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', ml: 1 }}>
+                vs last period
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sessions & Conversions Trend</h3>
+      {/* Charts Row */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' }, gap: 3, mb: 4 }}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+              Sessions & Conversions Trend
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={mockChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="sessions" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="conversions" stroke="#10b981" strokeWidth={2} />
+                <Line type="monotone" dataKey="sessions" stroke="#f97316" strokeWidth={2} />
+                <Line type="monotone" dataKey="conversions" stroke="#22c55e" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Traffic Sources</h3>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+              Traffic Sources
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={[
                 { source: 'Organic', sessions: 4500 },
@@ -258,51 +359,88 @@ export default function DashboardPage() {
                 <XAxis dataKey="source" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="sessions" fill="#3b82f6" />
+                <Bar dataKey="sessions" fill="#f97316" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+      </Box>
 
-        {/* Insights Section */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Today's Insights</h3>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+      {/* Insights Section */}
+      <Card>
+        <CardContent>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' }, 
+            alignItems: { xs: 'stretch', sm: 'center' }, 
+            justifyContent: 'space-between', 
+            mb: 3,
+            gap: 2
+          }}>
+            <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
+              Today's Insights
+            </Typography>
+            <Button
+              variant="text"
+              sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' }, color: '#f97316' }}
+            >
               View All Insights
-            </button>
-          </div>
+            </Button>
+          </Box>
           
-          <div className="space-y-4">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {mockInsights.map((insight) => (
-              <div key={insight.id} className={`insight-card ${getInsightColor(insight.type)}`}>
-                <div className="flex items-start space-x-3">
+              <Box
+                key={insight.id}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  borderLeft: 4,
+                  borderColor: getInsightBorderColor(insight.type),
+                  bgcolor: getInsightColor(insight.type),
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   {getInsightIcon(insight.type)}
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{insight.title}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{insight.description}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-sm text-gray-500">Suggested action: {insight.action}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          insight.priority === 'high' ? 'bg-red-100 text-red-800' :
-                          insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {insight.priority} priority
-                        </span>
-                        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" component="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                      {insight.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                      {insight.description}
+                    </Typography>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: { xs: 'column', sm: 'row' }, 
+                      alignItems: { xs: 'stretch', sm: 'center' }, 
+                      justifyContent: 'space-between',
+                      gap: 2
+                    }}>
+                      <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                        Suggested action: {insight.action}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={`${insight.priority} priority`}
+                          color={getPriorityColor(insight.priority)}
+                          size="small"
+                        />
+                        <Button
+                          variant="text"
+                          size="small"
+                          sx={{ color: '#f97316' }}
+                        >
                           Take Action
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   )
 }

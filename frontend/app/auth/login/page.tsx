@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Eye, EyeOff, ArrowRight, Zap } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Zap, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -24,56 +24,31 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem('token', data.access_token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        window.location.href = '/dashboard'
-      } else {
-        const error = await response.json()
-        alert(error.detail || 'Login failed')
-      }
-    } catch (error) {
-      alert('Login failed. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+    // For demo purposes, simulate login and redirect to dashboard
+    setTimeout(() => {
+      localStorage.setItem('demo_user', JSON.stringify({
+        id: '1',
+        email: formData.email,
+        name: 'Demo User',
+        role: 'admin'
+      }))
+      window.location.href = '/dashboard'
+    }, 1500)
   }
 
   const handleDemoLogin = async () => {
     setIsDemoLoading(true)
     
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/demo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem('token', data.access_token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        window.location.href = '/dashboard'
-      } else {
-        const error = await response.json()
-        alert(error.detail || 'Demo login failed')
-      }
-    } catch (error) {
-      alert('Demo login failed. Please try again.')
-    } finally {
-      setIsDemoLoading(false)
-    }
+    // For demo purposes, simulate demo login
+    setTimeout(() => {
+      localStorage.setItem('demo_user', JSON.stringify({
+        id: 'demo',
+        email: 'demo@nexopeak.com',
+        name: 'Demo User',
+        role: 'admin'
+      }))
+      window.location.href = '/dashboard'
+    }, 1500)
   }
 
   return (
@@ -84,11 +59,25 @@ export default function LoginPage() {
             <Zap className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back to Nexopeak
+            Welcome to Nexopeak
           </h2>
           <p className="text-gray-600">
-            Sign in to your account to continue
+            Digital Marketing Analytics Platform
           </p>
+        </div>
+
+        {/* Demo Notice */}
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="text-orange-800 font-medium mb-1">Demo Mode Active</p>
+              <p className="text-orange-700">
+                This is a frontend demo showcasing the beautiful orange color scheme and UI design. 
+                The backend database is currently being configured. Use any credentials to explore the dashboard.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
@@ -102,17 +91,17 @@ export default function LoginPage() {
               {isDemoLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Signing in...
+                  Entering Demo...
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
                   <Zap className="h-5 w-5 mr-2" />
-                  Try Demo Account
+                  Try Demo Dashboard
                 </div>
               )}
             </button>
             <p className="text-xs text-gray-500 text-center mt-2">
-              Demo credentials: demo@nexopeak.com / demo123
+              Instant access to explore the interface
             </p>
           </div>
 
@@ -139,7 +128,7 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 className="form-input"
-                placeholder="Enter your email"
+                placeholder="Enter any email to demo"
               />
             </div>
 
@@ -157,7 +146,7 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   className="form-input pr-10"
-                  placeholder="Enter your password"
+                  placeholder="Enter any password to demo"
                 />
                 <button
                   type="button"
@@ -206,7 +195,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">
-                    Sign in
+                    Sign in to Demo
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </div>
                 )}

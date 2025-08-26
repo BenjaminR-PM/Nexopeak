@@ -8,13 +8,12 @@ import uuid
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    org_id = Column(UUID(as_uuid=True), ForeignKey("orgs.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    org_id = Column(String(36), ForeignKey("orgs.id"), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    first_name = Column(String(100), nullable=False)
-    last_name = Column(String(100), nullable=False)
-    password_hash = Column(String(255), nullable=True)  # Nullable for OAuth users
-    role = Column(String(20), default="analyst", nullable=False)  # admin, analyst, viewer
+    name = Column(String(100), nullable=False)
+    hashed_password = Column(String(255), nullable=True)  # Nullable for OAuth users
+    role = Column(String(20), default="user", nullable=False)  # admin, analyst, viewer
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
@@ -24,15 +23,10 @@ class User(Base):
     # Relationships
     organization = relationship("Organization", back_populates="users")
     connections = relationship("Connection", back_populates="user")
-    insights = relationship("Insight", back_populates="user")
-    audit_logs = relationship("AuditLog", back_populates="actor_user")
+    campaigns = relationship("Campaign", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
-
-    @property
-    def full_name(self) -> str:
-        return f"{self.first_name} {self.last_name}"
+        return f"<User(id={self.id}, email='{self.email}', name='{self.name}', role='{self.role}')>"
 
     @property
     def is_admin(self) -> bool:

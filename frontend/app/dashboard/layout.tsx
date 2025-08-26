@@ -1,0 +1,358 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  Box,
+  Drawer,
+  AppBar,
+  Toolbar,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+  Typography,
+  Avatar,
+  Button,
+  Divider,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+} from '@mui/material'
+import {
+  BarChart as BarChartIcon,
+  Person as UserIcon,
+  Link as LinkIcon,
+  Description as FileTextIcon,
+  AutoAwesome as SparklesIcon,
+  Menu as MenuIcon,
+  Logout as LogOutIcon,
+  Notifications as NotificationsIcon,
+  Analytics as AnalyticsIcon,
+} from '@mui/icons-material'
+import UserDropdown from './components/UserDropdown'
+
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+
+const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: BarChartIcon },
+  { name: 'Campaign Analyzer', href: '/dashboard/campaign-analyzer', icon: AnalyticsIcon },
+  { name: 'Connections', href: '/dashboard/connections', icon: LinkIcon },
+  { name: 'Reports', href: '/dashboard/reports', icon: FileTextIcon },
+  { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
+]
+
+const drawerWidth = 280
+
+export default function DashboardLayout({
+  children,
+}: {
+  readonly children: React.ReactNode
+}) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedCampaign, setSelectedCampaign] = useState('')
+  const [campaigns, setCampaigns] = useState([])
+  const pathname = usePathname()
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('demo_user')
+    window.location.href = '/auth/login'
+  }
+
+  // Load campaigns for dropdown
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        // Mock campaigns data - replace with API call
+        const mockCampaigns = [
+          { id: '1', name: 'Summer Sale Campaign', status: 'active', type: 'search' },
+          { id: '2', name: 'Brand Awareness Q4', status: 'draft', type: 'display' },
+          { id: '3', name: 'Holiday Shopping', status: 'active', type: 'shopping' },
+          { id: '4', name: 'Mobile App Promotion', status: 'paused', type: 'app' },
+        ]
+        setCampaigns(mockCampaigns)
+        
+        // Set first active campaign as selected
+        const activeCampaign = mockCampaigns.find(c => c.status === 'active')
+        if (activeCampaign) {
+          setSelectedCampaign(activeCampaign.id)
+        }
+      } catch (error) {
+        console.error('Failed to load campaigns:', error)
+      }
+    }
+
+    loadCampaigns()
+  }, [])
+
+  const handleCampaignChange = (campaignId: string) => {
+    setSelectedCampaign(campaignId)
+    // You can add logic here to filter data based on selected campaign
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success'
+      case 'paused': return 'warning'
+      case 'draft': return 'default'
+      case 'completed': return 'info'
+      default: return 'default'
+    }
+  }
+
+  const drawer = (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Logo */}
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Avatar
+            sx={{
+              bgcolor: '#f97316',
+              width: 40,
+              height: 40,
+              mr: 2,
+            }}
+          >
+            <SparklesIcon />
+          </Avatar>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 700, background: 'linear-gradient(45deg, #f97316, #fb923c)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Nexopeak
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Navigation */}
+      <List sx={{ flex: 1, px: 2, py: 2 }}>
+        {navigation.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <ListItem key={item.name} disablePadding sx={{ mb: 1 }}>
+              <ListItemButton
+                component={Link}
+                href={item.href}
+                selected={isActive}
+                onClick={() => setMobileOpen(false)}
+                sx={{
+                  borderRadius: 2,
+                  '&.Mui-selected': {
+                    bgcolor: '#fef3c7',
+                    color: '#f97316',
+                    '&:hover': {
+                      bgcolor: '#fde68a',
+                    },
+                  },
+                  '&:hover': {
+                    bgcolor: '#f9fafb',
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: isActive ? '#f97316' : '#6b7280',
+                    minWidth: 40,
+                  }}
+                >
+                  <item.icon />
+                </ListItemIcon>
+                <ListItemText primary={item.name} />
+              </ListItemButton>
+            </ListItem>
+          )
+        })}
+      </List>
+
+      {/* User Section */}
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Avatar sx={{ bgcolor: '#fef3c7', color: '#f97316', mr: 2 }}>
+            <UserIcon />
+          </Avatar>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }} noWrap>
+              Demo User
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#6b7280' }} noWrap>
+              demo@nexopeak.com
+            </Typography>
+          </Box>
+        </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<LogOutIcon />}
+          onClick={handleLogout}
+          fullWidth
+          sx={{
+            fontSize: '0.75rem',
+            color: '#dc2626',
+            borderColor: '#dc2626',
+            '&:hover': {
+              borderColor: '#b91c1c',
+              bgcolor: '#fef2f2',
+            },
+          }}
+        >
+          Logout
+        </Button>
+      </Box>
+    </Box>
+  )
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', lg: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+          },
+        }}
+      >
+        {drawer}
+      </Drawer>
+
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', lg: 'block' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            position: 'relative',
+            height: '100vh',
+            flexShrink: 0,
+          },
+        }}
+        open
+      >
+        {drawer}
+      </Drawer>
+
+      {/* Main Content */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0, // Prevents content from overflowing
+        }}
+      >
+        {/* Top App Bar */}
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{
+            bgcolor: '#ffffff',
+            borderBottom: 1,
+            borderColor: '#e5e7eb',
+            color: '#111827',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { lg: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Campaign Selector */}
+              {campaigns.length > 0 && (
+                <>
+                  <FormControl size="small" sx={{ minWidth: 200, display: { xs: 'none', md: 'block' } }}>
+                    <InputLabel sx={{ color: '#6b7280' }}>Campaign</InputLabel>
+                    <Select
+                      value={selectedCampaign}
+                      onChange={(e) => handleCampaignChange(e.target.value)}
+                      label="Campaign"
+                      sx={{
+                        bgcolor: '#f9fafb',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#e5e7eb',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#f97316',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#f97316',
+                        },
+                      }}
+                    >
+                      {campaigns.map((campaign: any) => (
+                        <MenuItem key={campaign.id} value={campaign.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                            <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                              {campaign.name}
+                            </Typography>
+                            <Chip 
+                              label={campaign.status} 
+                              size="small" 
+                              color={getStatusColor(campaign.status)}
+                              sx={{ height: 20, fontSize: '0.7rem' }}
+                            />
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Divider orientation="vertical" flexItem />
+                </>
+              )}
+
+              <IconButton color="inherit" sx={{ position: 'relative' }}>
+                <NotificationsIcon />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 8,
+                    height: 8,
+                    bgcolor: '#dc2626',
+                    borderRadius: '50%',
+                  }}
+                />
+              </IconButton>
+
+              <Divider orientation="vertical" flexItem />
+
+              <UserDropdown userName="Demo User" userEmail="demo@nexopeak.com" />
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        {/* Page Content */}
+        <Box sx={{ flex: 1, p: { xs: 2, sm: 3 } }}>
+          {children}
+        </Box>
+      </Box>
+    </Box>
+  )
+}

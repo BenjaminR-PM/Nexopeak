@@ -8,7 +8,7 @@ import os
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.database import engine, Base, get_db
+from app.core.database import engine, Base, get_db, create_tables
 from app.api.v1.api import api_router
 from app.core.security import verify_token
 
@@ -22,18 +22,16 @@ security = HTTPBearer()
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting up Nexopeak API...")
-    # Don't create tables during startup - let the app handle it
+    # Create database tables
+    create_tables()
     yield
     # Shutdown
     print("Shutting down Nexopeak API...")
 
-# Create FastAPI app
 app = FastAPI(
     title="Nexopeak API",
     description="Digital Marketing Analytics Platform",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
     lifespan=lifespan
 )
 
@@ -61,30 +59,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "message": "Nexopeak API is running"}
-
-# Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Nexopeak API"}
+    return {
+        "message": "Welcome to Nexopeak API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "message": "Nexopeak API is running"
+    }
 
 @app.get("/test-db")
-async def test_database(db: Session = Depends(get_db)):
-    try:
-        # Simple database test
-        db.execute("SELECT 1")
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "database": "error", "message": str(e)}
+async def test_database():
+    from app.core.database import test_db_connection
+    db_status = test_db_connection()
+    if db_status:
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "message": "Database connection successful"
+        }
+    else:
+        return {
+            "status": "unhealthy",
+            "database": "error",
+            "message": "Database connection failed"
+        }
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)

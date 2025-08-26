@@ -2,84 +2,117 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react'
-import toast from 'react-hot-toast'
-
-const signupSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
-  acceptTerms: z.boolean().refine(val => val === true, 'You must accept the terms and conditions')
-})
-
-type SignupForm = z.infer<typeof signupSchema>
+import { Eye, EyeOff, Mail, Lock, User, Building, ArrowRight, Zap, AlertCircle } from 'lucide-react'
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupForm>({
-    resolver: zodResolver(signupSchema)
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    organizationName: '',
+    acceptTerms: false
   })
 
-  const onSubmit = async (data: SignupForm) => {
-    setIsLoading(true)
-    try {
-      // TODO: Implement signup API call
-      console.log('Signup data:', data)
-      toast.success('Account created successfully! Please check your email to verify your account.')
-    } catch (error) {
-      toast.error('Failed to create account. Please try again.')
-    } finally {
-      setIsLoading(false)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.organizationName) {
+      alert('Please fill in all required fields')
+      return
     }
+    
+    if (!formData.acceptTerms) {
+      alert('Please accept the terms and conditions')
+      return
+    }
+    
+    if (formData.password.length < 8) {
+      alert('Password must be at least 8 characters long')
+      return
+    }
+    
+    setIsLoading(true)
+    
+    // For demo purposes, simulate signup and redirect to dashboard
+    setTimeout(() => {
+      localStorage.setItem('demo_user', JSON.stringify({
+        id: 'new-user',
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`,
+        role: 'admin',
+        organization: formData.organizationName
+      }))
+      window.location.href = '/dashboard'
+    }, 1500)
   }
 
   const handleGoogleSignup = async () => {
     setIsOAuthLoading(true)
-    try {
-      // TODO: Implement Google OAuth
-      console.log('Google OAuth signup')
-    } catch (error) {
-      toast.error('Google signup failed. Please try again.')
-    } finally {
-      setIsOAuthLoading(false)
-    }
+    
+    // For demo purposes, simulate Google signup
+    setTimeout(() => {
+      localStorage.setItem('demo_user', JSON.stringify({
+        id: 'google-user',
+        email: 'user@gmail.com',
+        name: 'Google User',
+        role: 'admin',
+        organization: 'Demo Organization'
+      }))
+      window.location.href = '/dashboard'
+    }, 1500)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <Link href="/" className="text-3xl font-bold text-primary-600">
-            Nexopeak
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <div className="mx-auto h-16 w-16 bg-primary-600 rounded-full flex items-center justify-center mb-4">
+            <Zap className="h-8 w-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Create your account
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="text-gray-600">
             Start optimizing your marketing performance in under 10 minutes
           </p>
         </div>
       </div>
 
+      {/* Demo Notice */}
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="text-orange-800 font-medium mb-1">Demo Mode Active</p>
+              <p className="text-orange-700">
+                Email verification is temporarily disabled. After signup, you'll be taken directly to the dashboard panel.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
           {/* Google OAuth Button */}
           <button
             onClick={handleGoogleSignup}
             disabled={isOAuthLoading}
-            className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors duration-200"
           >
             {isOAuthLoading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-700"></div>
@@ -99,7 +132,7 @@ export default function SignupPage() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">Or continue with email</span>
@@ -107,7 +140,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
@@ -116,15 +149,15 @@ export default function SignupPage() {
                 <div className="mt-1 relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
-                    {...register('firstName')}
+                    name="firstName"
                     type="text"
-                    className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className="form-input pl-10"
                     placeholder="John"
+                    required
                   />
                 </div>
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-                )}
               </div>
 
               <div>
@@ -134,15 +167,15 @@ export default function SignupPage() {
                 <div className="mt-1 relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
-                    {...register('lastName')}
+                    name="lastName"
                     type="text"
-                    className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className="form-input pl-10"
                     placeholder="Doe"
+                    required
                   />
                 </div>
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-                )}
               </div>
             </div>
 
@@ -153,15 +186,15 @@ export default function SignupPage() {
               <div className="mt-1 relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  {...register('email')}
+                  name="email"
                   type="email"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="form-input pl-10"
                   placeholder="john@company.com"
+                  required
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
             </div>
 
             <div>
@@ -171,15 +204,15 @@ export default function SignupPage() {
               <div className="mt-1 relative">
                 <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  {...register('organizationName')}
+                  name="organizationName"
                   type="text"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  value={formData.organizationName}
+                  onChange={handleInputChange}
+                  className="form-input pl-10"
                   placeholder="Acme Corp"
+                  required
                 />
               </div>
-              {errors.organizationName && (
-                <p className="mt-1 text-sm text-red-600">{errors.organizationName.message}</p>
-              )}
             </div>
 
             <div>
@@ -189,10 +222,13 @@ export default function SignupPage() {
               <div className="mt-1 relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  {...register('password')}
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  className="appearance-none block w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="form-input pl-10 pr-12"
                   placeholder="••••••••"
+                  required
                 />
                 <button
                   type="button"
@@ -202,16 +238,16 @@ export default function SignupPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
             </div>
 
             <div className="flex items-center">
               <input
-                {...register('acceptTerms')}
+                name="acceptTerms"
                 type="checkbox"
+                checked={formData.acceptTerms}
+                onChange={handleInputChange}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                required
               />
               <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900">
                 I agree to the{' '}
@@ -220,16 +256,23 @@ export default function SignupPage() {
                 </Link>
               </label>
             </div>
-            {errors.acceptTerms && (
-              <p className="mt-1 text-sm text-red-600">{errors.acceptTerms.message}</p>
-            )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="w-full btn-primary text-lg py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating account...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  Create account & enter dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </div>
+              )}
             </button>
           </form>
 
@@ -241,6 +284,19 @@ export default function SignupPage() {
               </Link>
             </p>
           </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            By creating an account, you agree to our{' '}
+            <a href="#" className="text-primary-600 hover:text-primary-500">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="#" className="text-primary-600 hover:text-primary-500">
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </div>
     </div>
