@@ -57,7 +57,7 @@ export default function DashboardLayout({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState('')
-  const [campaigns, setCampaigns] = useState([])
+  const [campaigns, setCampaigns] = useState<Array<{id: string, name: string, status: string, type: string}>>([])
   const pathname = usePathname()
 
   const handleDrawerToggle = () => {

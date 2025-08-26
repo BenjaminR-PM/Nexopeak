@@ -191,7 +191,7 @@ export default function CampaignAnalyzerPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof QuestionnaireData],
+          ...(prev[parent as keyof QuestionnaireData] as object || {}),
           [child]: value
         }
       }))
