@@ -62,7 +62,7 @@ check_app_exists() {
     print_success "Frontend app $FRONTEND_APP found on Heroku"
 }
 
-# Deploy frontend using git subtree
+# Deploy frontend using temporary directory method
 deploy_frontend() {
     print_status "Deploying frontend to $FRONTEND_APP..."
     
@@ -72,12 +72,6 @@ deploy_frontend() {
         exit 1
     fi
     
-    # Add Heroku remote if it doesn't exist
-    if ! git remote | grep -q "heroku-frontend"; then
-        print_status "Adding Heroku remote..."
-        git remote add heroku-frontend https://git.heroku.com/$FRONTEND_APP.git
-    fi
-    
     # Commit any pending changes in main repo
     if ! git diff-index --quiet HEAD --; then
         print_status "Committing pending changes..."
@@ -85,9 +79,30 @@ deploy_frontend() {
         git commit -m "Update frontend before deployment" || true
     fi
     
-    # Deploy using git subtree push
-    print_status "Pushing frontend to Heroku using git subtree..."
-    git subtree push --prefix=frontend heroku-frontend main --force
+    # Create a temporary deployment directory
+    TEMP_DIR=$(mktemp -d)
+    print_status "Creating temporary deployment directory: $TEMP_DIR"
+    
+    # Copy frontend files to temp directory
+    cp -r frontend/* "$TEMP_DIR/"
+    
+    # Navigate to temp directory
+    cd "$TEMP_DIR"
+    
+    # Initialize git in temp directory
+    git init
+    git add .
+    git commit -m "Deploy updated frontend with user dropdown and profile reorganization"
+    
+    # Add Heroku remote
+    git remote add heroku https://git.heroku.com/$FRONTEND_APP.git
+    
+    # Force push to Heroku (this updates the existing app)
+    git push heroku main --force
+    
+    # Clean up and return to original directory
+    cd - > /dev/null
+    rm -rf "$TEMP_DIR"
     
     print_success "Frontend deployed successfully"
 }
