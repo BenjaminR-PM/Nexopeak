@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Menu,
@@ -25,12 +25,29 @@ interface UserDropdownProps {
 }
 
 export default function UserDropdown({ 
-  userName = 'Demo User', 
-  userEmail = 'demo@nexopeak.com' 
+  userName, 
+  userEmail 
 }: UserDropdownProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [currentUser, setCurrentUser] = useState({ name: 'Demo User', email: 'demo@nexopeak.com' })
   const router = useRouter()
   const open = Boolean(anchorEl)
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user_data')
+    const demoUser = localStorage.getItem('demo_user')
+    
+    if (userData) {
+      const user = JSON.parse(userData)
+      setCurrentUser({ name: user.name, email: user.email })
+    } else if (demoUser) {
+      const user = JSON.parse(demoUser)
+      setCurrentUser({ name: user.name, email: user.email })
+    } else if (userName && userEmail) {
+      setCurrentUser({ name: userName, email: userEmail })
+    }
+  }, [userName, userEmail])
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -50,7 +67,9 @@ export default function UserDropdown({
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('demo_user')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_data')
+    localStorage.removeItem('demo_user') // Keep for backward compatibility
     window.location.href = '/auth/login'
   }
 
@@ -75,10 +94,10 @@ export default function UserDropdown({
         </Avatar>
         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {userName}
+            {currentUser.name}
           </Typography>
           <Typography variant="caption" sx={{ color: '#6b7280' }}>
-            {userEmail}
+            {currentUser.email}
           </Typography>
         </Box>
         <ArrowDownIcon sx={{ color: '#6b7280', fontSize: 16 }} />

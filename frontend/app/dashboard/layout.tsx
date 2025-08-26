@@ -65,7 +65,9 @@ export default function DashboardLayout({
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('demo_user')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_data')
+    localStorage.removeItem('demo_user') // Keep for backward compatibility
     window.location.href = '/auth/login'
   }
 

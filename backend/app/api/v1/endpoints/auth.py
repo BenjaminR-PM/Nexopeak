@@ -142,6 +142,86 @@ async def create_demo_account(db: Session = Depends(get_db)):
             detail=f"Demo account creation failed: {str(e)}"
         )
 
+@router.post("/auth/google", response_model=TokenResponse)
+async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
+    """Handle Google OAuth sign-in"""
+    try:
+        # For demo purposes, we'll extract basic info from a mock token
+        # In production, you'd verify the Google ID token
+        import base64
+        import json
+        
+        # Mock token validation - in production use google.auth.transport.requests
+        try:
+            # For demo, we'll create a user based on a simple pattern
+            user_email = f"google.user+{oauth_request.id_token[:8]}@gmail.com"
+            user_name = f"Google User {oauth_request.id_token[:8]}"
+            
+            # Check if user exists
+            existing_user = AuthService.get_user_by_email(db, user_email)
+            
+            if existing_user:
+                # Return existing user token
+                access_token = AuthService.create_user_token(existing_user)
+                return TokenResponse(
+                    access_token=access_token,
+                    token_type="bearer",
+                    user=UserResponse(
+                        id=existing_user.id,
+                        email=existing_user.email,
+                        name=existing_user.name,
+                        role=existing_user.role,
+                        org_id=existing_user.org_id
+                    )
+                )
+            
+            # Create new organization for Google user
+            org = Organization(
+                name=f"{user_name}'s Organization",
+                domain="gmail.com"
+            )
+            db.add(org)
+            db.commit()
+            db.refresh(org)
+            
+            # Create new Google user (no password needed)
+            google_user = User(
+                email=user_email,
+                name=user_name,
+                hashed_password=None,  # No password for OAuth users
+                role="user",
+                org_id=org.id,
+                is_verified=True  # Google users are pre-verified
+            )
+            db.add(google_user)
+            db.commit()
+            db.refresh(google_user)
+            
+            access_token = AuthService.create_user_token(google_user)
+            return TokenResponse(
+                access_token=access_token,
+                token_type="bearer",
+                user=UserResponse(
+                    id=google_user.id,
+                    email=google_user.email,
+                    name=google_user.name,
+                    role=google_user.role,
+                    org_id=google_user.org_id
+                )
+            )
+            
+        except Exception as token_error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Google token"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google OAuth failed: {str(e)}"
+        )
+
 @router.get("/auth/me", response_model=UserResponse)
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     """Get current user information"""

@@ -46,33 +46,75 @@ export default function SignupPage() {
     
     setIsLoading(true)
     
-    // For demo purposes, simulate signup and redirect to dashboard
-    setTimeout(() => {
-      localStorage.setItem('demo_user', JSON.stringify({
-        id: 'new-user',
-        email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
-        role: 'admin',
-        organization: formData.organizationName
-      }))
-      window.location.href = '/dashboard'
-    }, 1500)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: `${formData.firstName} ${formData.lastName}`,
+          password: formData.password,
+          role: 'user'
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Signup failed')
+      }
+
+      const userData = await response.json()
+      alert('Account created successfully! You can now log in with your credentials.')
+      
+      // Redirect to login after success
+      window.location.href = '/auth/login'
+      
+    } catch (error: any) {
+      alert(error.message || 'Signup failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleGoogleSignup = async () => {
     setIsOAuthLoading(true)
     
-    // For demo purposes, simulate Google signup
-    setTimeout(() => {
-      localStorage.setItem('demo_user', JSON.stringify({
-        id: 'google-user',
-        email: 'user@gmail.com',
-        name: 'Google User',
-        role: 'admin',
-        organization: 'Demo Organization'
-      }))
+    try {
+      // For demo purposes, we'll simulate Google OAuth with a mock token
+      // In production, you'd use the Google OAuth library
+      const mockToken = Math.random().toString(36).substring(2) + Date.now().toString(36)
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_token: mockToken
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Google signup failed')
+      }
+
+      const loginData = await response.json()
+      
+      // Store authentication data
+      localStorage.setItem('access_token', loginData.access_token)
+      localStorage.setItem('user_data', JSON.stringify(loginData.user))
+      
+      // Redirect to dashboard
       window.location.href = '/dashboard'
-    }, 1500)
+      
+    } catch (error: any) {
+      alert(error.message || 'Google signup failed. Please try again.')
+    } finally {
+      setIsOAuthLoading(false)
+    }
   }
 
   return (

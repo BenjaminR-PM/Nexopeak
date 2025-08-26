@@ -24,31 +24,69 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    // For demo purposes, simulate login and redirect to dashboard
-    setTimeout(() => {
-      localStorage.setItem('demo_user', JSON.stringify({
-        id: '1',
-        email: formData.email,
-        name: 'Demo User',
-        role: 'admin'
-      }))
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Login failed')
+      }
+
+      const loginData = await response.json()
+      
+      // Store authentication data
+      localStorage.setItem('access_token', loginData.access_token)
+      localStorage.setItem('user_data', JSON.stringify(loginData.user))
+      
+      // Redirect to dashboard
       window.location.href = '/dashboard'
-    }, 1500)
+      
+    } catch (error: any) {
+      alert(error.message || 'Login failed. Please check your credentials.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleDemoLogin = async () => {
     setIsDemoLoading(true)
     
-    // For demo purposes, simulate demo login
-    setTimeout(() => {
-      localStorage.setItem('demo_user', JSON.stringify({
-        id: 'demo',
-        email: 'demo@nexopeak.com',
-        name: 'Demo User',
-        role: 'admin'
-      }))
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/demo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Demo login failed')
+      }
+
+      const loginData = await response.json()
+      
+      // Store authentication data
+      localStorage.setItem('access_token', loginData.access_token)
+      localStorage.setItem('user_data', JSON.stringify(loginData.user))
+      
+      // Redirect to dashboard
       window.location.href = '/dashboard'
-    }, 1500)
+      
+    } catch (error: any) {
+      alert(error.message || 'Demo login failed. Please try again.')
+    } finally {
+      setIsDemoLoading(false)
+    }
   }
 
   return (
