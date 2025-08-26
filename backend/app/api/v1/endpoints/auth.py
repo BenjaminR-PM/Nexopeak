@@ -146,16 +146,35 @@ async def create_demo_account(db: Session = Depends(get_db)):
 async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
     """Handle Google OAuth sign-in"""
     try:
-        # For demo purposes, we'll extract basic info from a mock token
-        # In production, you'd verify the Google ID token
-        import base64
-        import json
+        # Verify Google ID token
+        from google.auth.transport import requests
+        from google.oauth2 import id_token
+        import os
         
-        # Mock token validation - in production use google.auth.transport.requests
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        if not google_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth not configured"
+            )
+        
         try:
-            # For demo, we'll create a user based on a simple pattern
-            user_email = f"google.user+{oauth_request.id_token[:8]}@gmail.com"
-            user_name = f"Google User {oauth_request.id_token[:8]}"
+            # Verify the token
+            idinfo = id_token.verify_oauth2_token(
+                oauth_request.id_token, 
+                requests.Request(), 
+                google_client_id
+            )
+            
+            # Extract user info from verified token
+            user_email = idinfo.get('email')
+            user_name = idinfo.get('name', 'Google User')
+            
+            if not user_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email not provided by Google"
+                )
             
             # Check if user exists
             existing_user = AuthService.get_user_by_email(db, user_email)

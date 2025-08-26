@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User, Building, ArrowRight, Zap, AlertCircle } from 'lucide-react'
+import Script from 'next/script'
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -78,38 +79,43 @@ export default function SignupPage() {
     }
   }
 
-  const handleGoogleSignup = async () => {
-    console.log('Google signup clicked!') // Debug log
+  // Initialize Google Sign-In
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.google) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com',
+        callback: handleGoogleResponse
+      })
+    }
+  }, [])
+
+  const handleGoogleResponse = async (response: any) => {
+    console.log('Google response received:', response) // Debug log
     setIsOAuthLoading(true)
     
     try {
-      // For demo purposes, we'll simulate Google OAuth with a mock token
-      // In production, you'd use the Google OAuth library
-      const mockToken = Math.random().toString(36).substring(2) + Date.now().toString(36)
-      console.log('Mock token generated:', mockToken) // Debug log
-      
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
       console.log('API URL:', apiUrl) // Debug log
       
-      const response = await fetch(`${apiUrl}/auth/google`, {
+      const apiResponse = await fetch(`${apiUrl}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id_token: mockToken
+          id_token: response.credential
         }),
       })
 
-      console.log('Response status:', response.status) // Debug log
+      console.log('Response status:', apiResponse.status) // Debug log
 
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json()
         console.error('API Error:', errorData) // Debug log
         throw new Error(errorData.detail || 'Google signup failed')
       }
 
-      const loginData = await response.json()
+      const loginData = await apiResponse.json()
       console.log('Login successful:', loginData.user.email) // Debug log
       
       // Store authentication data
@@ -131,8 +137,22 @@ export default function SignupPage() {
     }
   }
 
+  const handleGoogleSignup = () => {
+    console.log('Google signup clicked!') // Debug log
+    if (typeof window !== 'undefined' && window.google) {
+      window.google.accounts.id.prompt()
+    } else {
+      alert('Google Sign-In not loaded. Please refresh the page.')
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <>
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="beforeInteractive"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-orange-600 rounded-full flex items-center justify-center mb-4">
@@ -357,5 +377,20 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+    </>
   )
+}
+
+// Add TypeScript declarations for Google Identity Services
+declare global {
+  interface Window {
+    google: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void
+          prompt: () => void
+        }
+      }
+    }
+  }
 }
