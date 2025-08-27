@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.security import create_access_token, verify_token, get_password_hash, verify_password
 from app.models.user import User
 from app.models.organization import Organization
-from app.schemas.auth import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schemas.auth import UserCreate, UserLogin, UserResponse, TokenResponse, GoogleOAuthRequest
 from app.services.auth_service import AuthService
 from typing import Optional
 
