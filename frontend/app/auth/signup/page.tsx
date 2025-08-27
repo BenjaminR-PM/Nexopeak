@@ -48,7 +48,7 @@ export default function SignupPage() {
     setIsLoading(true)
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ export default function SignupPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
       console.log('API URL:', apiUrl) // Debug log
       
-      const apiResponse = await fetch(`${apiUrl}/auth/google`, {
+      const apiResponse = await fetch(`${apiUrl}/api/v1/auth/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
