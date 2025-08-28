@@ -9,11 +9,16 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import engine, Base, get_db, create_tables
+from app.core.logging_config import setup_request_logging, LogModule
+from app.services.logging_service import get_logging_service
 from app.api.v1.api import api_router
 from app.core.security import verify_token
 
 # Load environment variables
 load_dotenv()
+
+# Initialize logging
+logging_service = get_logging_service()
 
 # Security
 security = HTTPBearer()
@@ -21,12 +26,17 @@ security = HTTPBearer()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting up Nexopeak API...")
+    logging_service.log_system_startup("Nexopeak API", "1.0.0")
+    logging_service.log_database_connection("PostgreSQL", "initializing")
+    
     # Create database tables
     create_tables()
+    
+    logging_service.log_system_startup("Database tables", "created")
     yield
+    
     # Shutdown
-    print("Shutting down Nexopeak API...")
+    logging_service.log_system_shutdown("Nexopeak API")
 
 app = FastAPI(
     title="Nexopeak API",
@@ -43,6 +53,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request logging middleware
+app.add_middleware(setup_request_logging())
 
 # Dependency for authentication
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):

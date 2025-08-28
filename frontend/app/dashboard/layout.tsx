@@ -34,6 +34,7 @@ import {
   Logout as LogOutIcon,
   Notifications as NotificationsIcon,
   Analytics as AnalyticsIcon,
+  BugReport as BugReportIcon,
 } from '@mui/icons-material'
 import UserDropdown from './components/UserDropdown'
 
@@ -46,6 +47,7 @@ const navigation = [
   { name: 'Connections', href: '/dashboard/connections', icon: LinkIcon },
   { name: 'Reports', href: '/dashboard/reports', icon: FileTextIcon },
   { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
+  { name: 'System Logs', href: '/dashboard/logs', icon: BugReportIcon },
 ]
 
 const drawerWidth = 280

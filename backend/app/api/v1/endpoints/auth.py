@@ -7,15 +7,22 @@ from app.models.user import User
 from app.models.organization import Organization
 from app.schemas.auth import UserCreate, UserLogin, UserResponse, TokenResponse, GoogleOAuthRequest
 from app.services.auth_service import AuthService
+from app.services.logging_service import get_logging_service
+from app.core.logging_config import LogModule
 from typing import Optional
 
 router = APIRouter()
 security = HTTPBearer()
+logging_service = get_logging_service()
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_create: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
     try:
+        logging_service.logger.info(
+            LogModule.AUTH,
+            f"Registration attempt for email: {user_create.email}"
+        )
         # Check if user already exists
         existing_user = AuthService.get_user_by_email(db, user_create.email)
         if existing_user:
@@ -83,6 +90,8 @@ async def login(user_login: UserLogin, db: Session = Depends(get_db)):
 async def create_demo_account(db: Session = Depends(get_db)):
     """Create a demo account for testing purposes"""
     try:
+        logging_service.log_demo_access()
+        logging_service.logger.info(LogModule.DEMO_SYSTEM, "Demo account creation requested")
         # Check if demo user already exists
         demo_email = "demo@nexopeak.com"
         existing_user = AuthService.get_user_by_email(db, demo_email)
