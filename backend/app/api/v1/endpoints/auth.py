@@ -12,7 +12,7 @@ from typing import Optional
 router = APIRouter()
 security = HTTPBearer()
 
-@router.post("/auth/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse)
 async def register(user_create: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
     try:
@@ -50,7 +50,7 @@ async def register(user_create: UserCreate, db: Session = Depends(get_db)):
             detail=f"Registration failed: {str(e)}"
         )
 
-@router.post("/auth/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse)
 async def login(user_login: UserLogin, db: Session = Depends(get_db)):
     """Login user and return access token"""
     try:
@@ -79,7 +79,7 @@ async def login(user_login: UserLogin, db: Session = Depends(get_db)):
             detail=f"Login failed: {str(e)}"
         )
 
-@router.post("/auth/demo", response_model=TokenResponse)
+@router.post("/demo", response_model=TokenResponse)
 async def create_demo_account(db: Session = Depends(get_db)):
     """Create a demo account for testing purposes"""
     try:
@@ -142,7 +142,7 @@ async def create_demo_account(db: Session = Depends(get_db)):
             detail=f"Demo account creation failed: {str(e)}"
         )
 
-@router.post("/auth/google", response_model=TokenResponse)
+@router.post("/google", response_model=TokenResponse)
 async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
     """Handle Google OAuth sign-in"""
     try:
@@ -241,7 +241,7 @@ async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(
             detail=f"Google OAuth failed: {str(e)}"
         )
 
-@router.get("/auth/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse)
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     """Get current user information"""
     try:
