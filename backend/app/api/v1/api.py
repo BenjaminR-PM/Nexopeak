@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, organizations, connections, insights, analytics, etl, campaigns, logs
+from app.api.v1.endpoints import auth, users, organizations, connections, insights, analytics, etl, campaigns, logs, admin
 
 api_router = APIRouter()
 
@@ -13,3 +13,4 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 api_router.include_router(etl.router, prefix="/etl", tags=["etl"])
 api_router.include_router(campaigns.router, prefix="/campaigns", tags=["campaigns"])
 api_router.include_router(logs.router, prefix="/logs", tags=["logging"])
+api_router.include_router(admin.router, prefix="/admin", tags=["administration"])

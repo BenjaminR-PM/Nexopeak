@@ -41,14 +41,25 @@ import UserDropdown from './components/UserDropdown'
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChartIcon },
-  { name: 'Campaign Analyzer', href: '/dashboard/campaign-analyzer', icon: AnalyticsIcon },
-  { name: 'Connections', href: '/dashboard/connections', icon: LinkIcon },
-  { name: 'Reports', href: '/dashboard/reports', icon: FileTextIcon },
-  { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
-  { name: 'System Logs', href: '/dashboard/logs', icon: BugReportIcon },
-]
+const getNavigation = (userRole?: string) => {
+  const baseNavigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: BarChartIcon },
+    { name: 'Campaign Analyzer', href: '/dashboard/campaign-analyzer', icon: AnalyticsIcon },
+    { name: 'Connections', href: '/dashboard/connections', icon: LinkIcon },
+    { name: 'Reports', href: '/dashboard/reports', icon: FileTextIcon },
+    { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
+  ]
+  
+  // Add admin-only items
+  if (userRole === 'admin') {
+    baseNavigation.push(
+      { name: 'System Logs', href: '/dashboard/logs', icon: BugReportIcon },
+      { name: 'Admin Panel', href: '/dashboard/admin', icon: UserIcon }
+    )
+  }
+  
+  return baseNavigation
+}
 
 const drawerWidth = 280
 
@@ -60,7 +71,10 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState('')
   const [campaigns, setCampaigns] = useState<Array<{id: string, name: string, status: string, type: string}>>([])
+  const [userRole, setUserRole] = useState<string>('')
   const pathname = usePathname()
+  
+  const navigation = getNavigation(userRole)
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -73,8 +87,20 @@ export default function DashboardLayout({
     window.location.href = '/auth/login'
   }
 
-  // Load campaigns for dropdown
+  // Load user data and campaigns
   useEffect(() => {
+    const loadUserData = () => {
+      try {
+        const userData = localStorage.getItem('user_data')
+        if (userData) {
+          const user = JSON.parse(userData)
+          setUserRole(user.role || 'user')
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      }
+    }
+
     const loadCampaigns = async () => {
       try {
         // Mock campaigns data - replace with API call
@@ -96,6 +122,7 @@ export default function DashboardLayout({
       }
     }
 
+    loadUserData()
     loadCampaigns()
   }, [])
 
