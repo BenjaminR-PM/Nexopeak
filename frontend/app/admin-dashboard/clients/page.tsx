@@ -232,7 +232,7 @@ export default function ClientManagementPage() {
   }
 
   // Format client data for display
-  const formatClientData = (client) => ({
+  const formatClientData = (client: any) => ({
     id: client.id,
     name: client.name,
     industry: client.industry,
