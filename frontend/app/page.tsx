@@ -13,11 +13,11 @@ export default function HomePage() {
                 <h1 className="text-2xl font-bold text-gradient">Nexopeak</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <Link 
                 href="/admin-login" 
-                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors duration-200 border border-gray-300 hover:border-red-600 rounded-lg"
-                title="Admin Portal"
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all duration-200 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105"
+                title="Admin Portal Access"
               >
                 <Shield className="h-4 w-4" />
                 <span>Admin</span>
