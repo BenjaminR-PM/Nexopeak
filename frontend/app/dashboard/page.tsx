@@ -28,10 +28,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
 
+interface UserData {
+  name?: string
+  email?: string
+  [key: string]: any
+}
+
 export default function DashboardPage() {
   const [selectedDateRange, setSelectedDateRange] = useState('7d')
   const [isLoading, setIsLoading] = useState(false)
-  const [userData, setUserData] = useState(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
 
   useEffect(() => {
     // Fetch user data and dashboard metrics from API
