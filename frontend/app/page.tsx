@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, BarChart3, TrendingUp, Lightbulb, Zap, Shield, FileText, Settings } from 'lucide-react'
+import { ArrowRight, BarChart3, TrendingUp, Lightbulb, Zap, Shield, FileText } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -15,11 +15,12 @@ export default function HomePage() {
             </div>
             <div className="flex items-center space-x-4">
               <Link 
-                href="/auth/login?admin=true" 
-                className="p-2 text-gray-500 hover:text-orange-500 transition-colors duration-200"
-                title="Admin Login"
+                href="/admin/login" 
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors duration-200 border border-gray-300 hover:border-red-600 rounded-lg"
+                title="Admin Portal"
               >
-                <Settings className="h-5 w-5" />
+                <Shield className="h-4 w-4" />
+                <span>Admin</span>
               </Link>
               <Link href="/auth/login" className="btn-secondary">
                 Sign In
