@@ -67,6 +67,9 @@ class LogModule(str, Enum):
     # Monitoring
     HEALTH_CHECK = "health_check"
     PERFORMANCE = "performance"
+    
+    # System Internals
+    LOGGING = "logging"
 
 
 class LogEntry(BaseModel):
@@ -89,7 +92,7 @@ class NexopeakFormatter(logging.Formatter):
     
     def format(self, record: logging.LogRecord) -> str:
         # Extract custom fields
-        module = getattr(record, 'module', LogModule.API)
+        module = getattr(record, 'nexopeak_module', LogModule.API)
         user_id = getattr(record, 'user_id', None)
         org_id = getattr(record, 'organization_id', None)
         request_id = getattr(record, 'request_id', None)
@@ -138,7 +141,7 @@ class NexopeakLogger:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
         console_format = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - [%(module)s] - %(message)s'
+            '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s] - %(message)s'
         )
         console_handler.setFormatter(console_format)
         
@@ -174,7 +177,7 @@ class NexopeakLogger:
     def _log(self, level: str, module: LogModule, message: str, **kwargs):
         """Internal logging method."""
         extra = {
-            'module': module,
+            'nexopeak_module': module,
             **kwargs
         }
         
