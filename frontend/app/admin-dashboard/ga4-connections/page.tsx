@@ -126,7 +126,7 @@ export default function GA4ConnectionsAdminPage() {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new (Error as any)(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
