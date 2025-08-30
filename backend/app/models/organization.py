@@ -24,6 +24,7 @@ class Organization(Base):
     users = relationship("User", back_populates="organization")
     connections = relationship("Connection", back_populates="organization")
     campaigns = relationship("Campaign", back_populates="organization")
+    subscription = relationship("Subscription", back_populates="organization", uselist=False)
 
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', domain='{self.domain}')>"

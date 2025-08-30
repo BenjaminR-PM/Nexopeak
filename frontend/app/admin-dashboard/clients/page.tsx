@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Alert,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -52,6 +53,13 @@ export default function ClientManagementPage() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [openAddDialog, setOpenAddDialog] = useState(false)
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    industry: '',
+    primary_contact_email: '',
+    plan: '',
+    initial_users: 1
+  })
   const router = useRouter()
 
   useEffect(() => {
@@ -91,74 +99,115 @@ export default function ClientManagementPage() {
     router.push('/admin-login')
   }
 
-  // Mock client data (replace with real API call)
-  const clients = [
-    {
-      id: 1,
-      name: 'Acme Corporation',
-      industry: 'Technology',
-      plan: 'Enterprise',
-      users: 25,
-      ga4Properties: 3,
-      monthlyRevenue: 2499,
-      joinDate: '2024-06-15',
-      status: 'active',
-      primaryContact: 'john.doe@acme.com',
-      lastLogin: '2025-01-15 16:30'
-    },
-    {
-      id: 2,
-      name: 'TechStart Inc',
-      industry: 'Startup',
-      plan: 'Professional',
-      users: 8,
-      ga4Properties: 1,
-      monthlyRevenue: 299,
-      joinDate: '2024-11-02',
-      status: 'active',
-      primaryContact: 'sarah@techstart.com',
-      lastLogin: '2025-01-14 09:15'
-    },
-    {
-      id: 3,
-      name: 'Global Retail Solutions',
-      industry: 'E-commerce',
-      plan: 'Enterprise',
-      users: 45,
-      ga4Properties: 8,
-      monthlyRevenue: 4999,
-      joinDate: '2024-03-20',
-      status: 'active',
-      primaryContact: 'mike@globalretail.com',
-      lastLogin: '2025-01-15 14:22'
-    },
-    {
-      id: 4,
-      name: 'Digital Marketing Agency',
-      industry: 'Marketing',
-      plan: 'Professional',
-      users: 12,
-      ga4Properties: 15,
-      monthlyRevenue: 599,
-      joinDate: '2024-08-10',
-      status: 'trial',
-      primaryContact: 'lisa@agency.com',
-      lastLogin: '2025-01-13 11:45'
-    },
-    {
-      id: 5,
-      name: 'Local Business Hub',
-      industry: 'Services',
-      plan: 'Basic',
-      users: 3,
-      ga4Properties: 1,
-      monthlyRevenue: 99,
-      joinDate: '2024-12-01',
-      status: 'suspended',
-      primaryContact: 'owner@localbiz.com',
-      lastLogin: '2025-01-10 08:30'
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [totalRevenue, setTotalRevenue] = useState(0)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [totalProperties, setTotalProperties] = useState(0)
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+
+  // Fetch clients from API
+  const fetchClients = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('access_token')
+      
+      if (!token) {
+        router.push('/admin-login')
+        return
+      }
+
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      params.append('limit', '100')
+      params.append('offset', '0')
+
+      const response = await fetch(`${apiUrl}/api/v1/admin/clients?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.status === 401) {
+        router.push('/admin-login')
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setClients(data.clients || [])
+      setTotalRevenue(data.total_revenue || 0)
+      setTotalUsers(data.total_users || 0)
+      setTotalProperties(data.total_properties || 0)
+      setError('')
+    } catch (err) {
+      console.error('Error fetching clients:', err)
+      setError('Failed to load clients')
+      setClients([])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  useEffect(() => {
+    fetchClients()
+  }, [searchTerm])
+
+  // Handle create client
+  const handleCreateClient = async (clientData) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      
+      const response = await fetch(`${apiUrl}/api/v1/admin/clients`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(clientData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Refresh the clients list
+      fetchClients()
+      setOpenAddDialog(false)
+      
+      // Reset form
+      setNewClientData({
+        name: '',
+        industry: '',
+        primary_contact_email: '',
+        plan: '',
+        initial_users: 1
+      })
+      
+      // Show success message (you could add a snackbar here)
+      console.log('Client created successfully')
+    } catch (err) {
+      console.error('Error creating client:', err)
+      setError('Failed to create client')
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setOpenAddDialog(false)
+    setNewClientData({
+      name: '',
+      industry: '',
+      primary_contact_email: '',
+      plan: '',
+      initial_users: 1
+    })
+  }
 
   const getStatusChip = (status: string) => {
     switch (status) {
@@ -182,15 +231,22 @@ export default function ClientManagementPage() {
     }
   }
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.primaryContact.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // Format client data for display
+  const formatClientData = (client) => ({
+    id: client.id,
+    name: client.name,
+    industry: client.industry,
+    plan: client.plan,
+    users_count: client.users_count,
+    ga4_properties_count: client.ga4_properties_count,
+    monthly_revenue: client.monthly_revenue,
+    join_date: new Date(client.join_date).toLocaleDateString(),
+    status: client.status,
+    primary_contact: client.primary_contact,
+    last_login: client.last_login ? new Date(client.last_login).toLocaleString() : 'Never'
+  })
 
-  const totalRevenue = clients.reduce((sum, client) => sum + client.monthlyRevenue, 0)
-  const totalUsers = clients.reduce((sum, client) => sum + client.users, 0)
-  const totalProperties = clients.reduce((sum, client) => sum + client.ga4Properties, 0)
+  const displayClients = clients.map(formatClientData)
 
   if (!user) {
     return (
@@ -288,13 +344,20 @@ export default function ClientManagementPage() {
           </CardContent>
         </Card>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 4 }}>
+            {error}
+          </Alert>
+        )}
+
         {/* Summary Cards */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3, mb: 4 }}>
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Business sx={{ fontSize: 40, color: '#1e3a8a', mb: 1 }} />
               <Typography variant="h3" fontWeight={700} color="#1e3a8a">
-                {clients.length}
+                {loading ? '...' : clients.length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Clients
@@ -305,7 +368,7 @@ export default function ClientManagementPage() {
             <CardContent sx={{ textAlign: 'center' }}>
               <MonetizationOn sx={{ fontSize: 40, color: '#10b981', mb: 1 }} />
               <Typography variant="h3" fontWeight={700} color="#10b981">
-                ${totalRevenue.toLocaleString()}
+                {loading ? '...' : `$${totalRevenue.toLocaleString()}`}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Monthly Revenue
@@ -316,7 +379,7 @@ export default function ClientManagementPage() {
             <CardContent sx={{ textAlign: 'center' }}>
               <People sx={{ fontSize: 40, color: '#3b82f6', mb: 1 }} />
               <Typography variant="h3" fontWeight={700} color="#3b82f6">
-                {totalUsers}
+                {loading ? '...' : totalUsers}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Users
@@ -327,7 +390,7 @@ export default function ClientManagementPage() {
             <CardContent sx={{ textAlign: 'center' }}>
               <Analytics sx={{ fontSize: 40, color: '#f59e0b', mb: 1 }} />
               <Typography variant="h3" fontWeight={700} color="#f59e0b">
-                {totalProperties}
+                {loading ? '...' : totalProperties}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 GA4 Properties
@@ -375,96 +438,142 @@ export default function ClientManagementPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredClients.map((client) => (
-                    <TableRow key={client.id} hover>
-                      <TableCell>
-                        <Box>
-                          <Typography fontWeight={600}>{client.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {client.industry} • Joined {new Date(client.joinDate).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={client.plan} 
-                          size="small"
-                          sx={{ 
-                            backgroundColor: `${getPlanColor(client.plan)}20`,
-                            color: getPlanColor(client.plan),
-                            fontWeight: 600
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight={500}>{client.users}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight={500}>{client.ga4Properties}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight={600} color="#10b981">
-                          ${client.monthlyRevenue}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          Loading clients...
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        {getStatusChip(client.status)}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{client.primaryContact}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{client.lastLogin}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" gap={1}>
-                          <Button size="small" variant="outlined" startIcon={<Edit />}>
-                            Edit
-                          </Button>
-                          <Button size="small" variant="outlined" startIcon={<TrendingUp />}>
-                            Analytics
-                          </Button>
-                        </Box>
+                    </TableRow>
+                  ) : displayClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          No clients found matching your search criteria.
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    displayClients.map((client) => (
+                      <TableRow key={client.id} hover>
+                        <TableCell>
+                          <Box>
+                            <Typography fontWeight={600}>{client.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {client.industry} • Joined {client.join_date}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={client.plan} 
+                            size="small"
+                            sx={{ 
+                              backgroundColor: `${getPlanColor(client.plan)}20`,
+                              color: getPlanColor(client.plan),
+                              fontWeight: 600
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography fontWeight={500}>{client.users_count}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography fontWeight={500}>{client.ga4_properties_count}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography fontWeight={600} color="#10b981">
+                            ${client.monthly_revenue}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusChip(client.status)}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{client.primary_contact}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{client.last_login}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" gap={1}>
+                            <Button size="small" variant="outlined" startIcon={<Edit />}>
+                              Edit
+                            </Button>
+                            <Button size="small" variant="outlined" startIcon={<TrendingUp />}>
+                              Analytics
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
 
-            {filteredClients.length === 0 && (
-              <Box textAlign="center" py={4}>
-                <Typography variant="body1" color="text.secondary">
-                  No clients found matching your search criteria.
-                </Typography>
-              </Box>
-            )}
+
           </CardContent>
         </Card>
       </Box>
 
       {/* Add Client Dialog */}
-      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="md" fullWidth>
+      <Dialog open={openAddDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>Add New Client Organization</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'grid', gap: 2, mt: 2 }}>
-            <TextField label="Organization Name" fullWidth />
-            <TextField label="Industry" fullWidth />
-            <TextField label="Primary Contact Email" fullWidth />
+            <TextField 
+              label="Organization Name" 
+              fullWidth 
+              value={newClientData.name}
+              onChange={(e) => setNewClientData({...newClientData, name: e.target.value})}
+              required
+            />
+            <TextField 
+              label="Industry" 
+              fullWidth 
+              value={newClientData.industry}
+              onChange={(e) => setNewClientData({...newClientData, industry: e.target.value})}
+            />
+            <TextField 
+              label="Primary Contact Email" 
+              fullWidth 
+              type="email"
+              value={newClientData.primary_contact_email}
+              onChange={(e) => setNewClientData({...newClientData, primary_contact_email: e.target.value})}
+              required
+            />
             <FormControl fullWidth>
               <InputLabel>Subscription Plan</InputLabel>
-              <Select label="Subscription Plan">
+              <Select 
+                label="Subscription Plan"
+                value={newClientData.plan}
+                onChange={(e) => setNewClientData({...newClientData, plan: e.target.value})}
+              >
                 <MenuItem value="Basic">Basic - $99/month</MenuItem>
                 <MenuItem value="Professional">Professional - $299/month</MenuItem>
                 <MenuItem value="Enterprise">Enterprise - $999/month</MenuItem>
               </Select>
             </FormControl>
-            <TextField label="Initial Users" type="number" fullWidth />
+            <TextField 
+              label="Initial Users" 
+              type="number" 
+              fullWidth 
+              value={newClientData.initial_users}
+              onChange={(e) => setNewClientData({...newClientData, initial_users: parseInt(e.target.value) || 1})}
+              inputProps={{ min: 1 }}
+            />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-          <Button variant="contained" sx={{ backgroundColor: '#dc2626' }}>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            sx={{ backgroundColor: '#dc2626' }}
+            onClick={() => handleCreateClient(newClientData)}
+            disabled={!newClientData.name || !newClientData.primary_contact_email || !newClientData.plan}
+          >
             Create Client
           </Button>
         </DialogActions>

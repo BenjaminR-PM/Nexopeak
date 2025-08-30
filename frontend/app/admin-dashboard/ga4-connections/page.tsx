@@ -84,57 +84,81 @@ export default function GA4ConnectionsAdminPage() {
     router.push('/admin-login')
   }
 
-  // Mock GA4 connections data (replace with real API call)
-  const ga4Connections = [
-    {
-      id: 1,
-      organization: 'Acme Corp',
-      propertyId: 'G-XXXXXXXXX1',
-      propertyName: 'Acme Website',
-      status: 'connected',
-      lastSync: '2025-01-15 14:30',
-      events: '45.2K',
-      apiCalls: '1,250',
-      dataQuality: 'excellent',
-      owner: 'john@acme.com'
-    },
-    {
-      id: 2,
-      organization: 'TechStart Inc',
-      propertyId: 'G-XXXXXXXXX2',
-      propertyName: 'TechStart App',
-      status: 'error',
-      lastSync: '2025-01-14 09:15',
-      events: '12.8K',
-      apiCalls: '890',
-      dataQuality: 'poor',
-      owner: 'sarah@techstart.com'
-    },
-    {
-      id: 3,
-      organization: 'Global Retail',
-      propertyId: 'G-XXXXXXXXX3',
-      propertyName: 'E-commerce Site',
-      status: 'warning',
-      lastSync: '2025-01-15 16:45',
-      events: '89.1K',
-      apiCalls: '2,100',
-      dataQuality: 'good',
-      owner: 'mike@globalretail.com'
-    },
-    {
-      id: 4,
-      organization: 'Digital Agency',
-      propertyId: 'G-XXXXXXXXX4',
-      propertyName: 'Client Portfolio',
-      status: 'connected',
-      lastSync: '2025-01-15 17:20',
-      events: '23.5K',
-      apiCalls: '675',
-      dataQuality: 'good',
-      owner: 'lisa@agency.com'
+  const [ga4Connections, setGa4Connections] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [statusCounts, setStatusCounts] = useState({
+    total: 0,
+    connected: 0,
+    error: 0,
+    warning: 0
+  })
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+
+  // Fetch GA4 connections from API
+  const fetchGA4Connections = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('access_token')
+      
+      if (!token) {
+        router.push('/admin-login')
+        return
+      }
+
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      if (filterStatus !== 'all') params.append('status', filterStatus)
+      params.append('limit', '100')
+      params.append('offset', '0')
+
+      const response = await fetch(`${apiUrl}/api/v1/admin/ga4-connections?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.status === 401) {
+        router.push('/admin-login')
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setGa4Connections(data.connections || [])
+      setStatusCounts(data.status_counts || {})
+      setError('')
+    } catch (err) {
+      console.error('Error fetching GA4 connections:', err)
+      setError('Failed to load GA4 connections')
+      setGa4Connections([])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  useEffect(() => {
+    fetchGA4Connections()
+  }, [searchTerm, filterStatus])
+
+  // Format data for display
+  const formatConnectionData = (connection) => ({
+    id: connection.id,
+    organization: connection.organization_name,
+    propertyId: connection.property_id,
+    propertyName: connection.property_name,
+    status: connection.status,
+    lastSync: connection.last_sync ? new Date(connection.last_sync).toLocaleString() : 'Never',
+    events: connection.events_24h?.toLocaleString() || '0',
+    apiCalls: connection.api_calls_today?.toLocaleString() || '0',
+    dataQuality: connection.data_quality,
+    owner: connection.owner_email
+  })
 
   const getStatusChip = (status: string) => {
     switch (status) {
@@ -158,20 +182,7 @@ export default function GA4ConnectionsAdminPage() {
     }
   }
 
-  const filteredConnections = ga4Connections.filter(conn => {
-    const matchesSearch = conn.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         conn.propertyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         conn.owner.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || conn.status === filterStatus
-    return matchesSearch && matchesFilter
-  })
-
-  const statusCounts = {
-    total: ga4Connections.length,
-    connected: ga4Connections.filter(c => c.status === 'connected').length,
-    error: ga4Connections.filter(c => c.status === 'error').length,
-    warning: ga4Connections.filter(c => c.status === 'warning').length
-  }
+  const displayConnections = ga4Connections.map(formatConnectionData)
 
   if (!user) {
     return (
@@ -281,12 +292,19 @@ export default function GA4ConnectionsAdminPage() {
           </CardContent>
         </Card>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 4 }}>
+            {error}
+          </Alert>
+        )}
+
         {/* Status Overview Cards */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3, mb: 4 }}>
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h3" fontWeight={700} color="#1e3a8a">
-                {statusCounts.total}
+                {loading ? '...' : (statusCounts.total || 0)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Connections
@@ -296,7 +314,7 @@ export default function GA4ConnectionsAdminPage() {
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h3" fontWeight={700} color="#10b981">
-                {statusCounts.connected}
+                {loading ? '...' : (statusCounts.connected || 0)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Active & Healthy
@@ -306,7 +324,7 @@ export default function GA4ConnectionsAdminPage() {
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h3" fontWeight={700} color="#f59e0b">
-                {statusCounts.warning}
+                {loading ? '...' : (statusCounts.warning || 0)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Need Attention
@@ -316,7 +334,7 @@ export default function GA4ConnectionsAdminPage() {
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h3" fontWeight={700} color="#ef4444">
-                {statusCounts.error}
+                {loading ? '...' : (statusCounts.error || 0)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Critical Issues
@@ -347,32 +365,36 @@ export default function GA4ConnectionsAdminPage() {
                 variant={filterStatus === 'all' ? 'contained' : 'outlined'}
                 onClick={() => setFilterStatus('all')}
                 size="small"
+                disabled={loading}
               >
-                All ({statusCounts.total})
+                All ({loading ? '...' : (statusCounts.total || 0)})
               </Button>
               <Button 
                 variant={filterStatus === 'connected' ? 'contained' : 'outlined'}
                 onClick={() => setFilterStatus('connected')}
                 size="small"
                 color="success"
+                disabled={loading}
               >
-                Connected ({statusCounts.connected})
+                Connected ({loading ? '...' : (statusCounts.connected || 0)})
               </Button>
               <Button 
                 variant={filterStatus === 'warning' ? 'contained' : 'outlined'}
                 onClick={() => setFilterStatus('warning')}
                 size="small"
                 color="warning"
+                disabled={loading}
               >
-                Warning ({statusCounts.warning})
+                Warning ({loading ? '...' : (statusCounts.warning || 0)})
               </Button>
               <Button 
                 variant={filterStatus === 'error' ? 'contained' : 'outlined'}
                 onClick={() => setFilterStatus('error')}
                 size="small"
                 color="error"
+                disabled={loading}
               >
-                Error ({statusCounts.error})
+                Error ({loading ? '...' : (statusCounts.error || 0)})
               </Button>
             </Box>
           </CardContent>
@@ -397,72 +419,84 @@ export default function GA4ConnectionsAdminPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredConnections.map((connection) => (
-                    <TableRow key={connection.id} hover>
-                      <TableCell>
-                        <Typography fontWeight={600}>{connection.organization}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {connection.propertyName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {connection.propertyId}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusChip(connection.status)}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{connection.lastSync}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {connection.events}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          Loading connections...
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{connection.apiCalls}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={connection.dataQuality} 
-                          size="small"
-                          sx={{ 
-                            backgroundColor: `${getDataQualityColor(connection.dataQuality)}20`,
-                            color: getDataQualityColor(connection.dataQuality),
-                            fontWeight: 500
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{connection.owner}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" gap={1}>
-                          <Button size="small" variant="outlined">
-                            View
-                          </Button>
-                          <Button size="small" variant="outlined" color="warning">
-                            Test
-                          </Button>
-                        </Box>
+                    </TableRow>
+                  ) : displayConnections.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          No connections found matching your criteria.
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    displayConnections.map((connection) => (
+                      <TableRow key={connection.id} hover>
+                        <TableCell>
+                          <Typography fontWeight={600}>{connection.organization}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight={500}>
+                              {connection.propertyName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {connection.propertyId}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusChip(connection.status)}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{connection.lastSync}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={500}>
+                            {connection.events}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{connection.apiCalls}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={connection.dataQuality} 
+                            size="small"
+                            sx={{ 
+                              backgroundColor: `${getDataQualityColor(connection.dataQuality)}20`,
+                              color: getDataQualityColor(connection.dataQuality),
+                              fontWeight: 500
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{connection.owner}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" gap={1}>
+                            <Button size="small" variant="outlined">
+                              View
+                            </Button>
+                            <Button size="small" variant="outlined" color="warning">
+                              Test
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
 
-            {filteredConnections.length === 0 && (
-              <Box textAlign="center" py={4}>
-                <Typography variant="body1" color="text.secondary">
-                  No connections found matching your criteria.
-                </Typography>
-              </Box>
-            )}
+
           </CardContent>
         </Card>
 
