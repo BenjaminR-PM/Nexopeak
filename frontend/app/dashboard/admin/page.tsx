@@ -34,7 +34,7 @@ import {
 import {
   Person as Users,
   Business as Building,
-  Activity,
+  Timeline as Activity,
   Warning as AlertTriangle,
   Security as Shield,
   Settings,
