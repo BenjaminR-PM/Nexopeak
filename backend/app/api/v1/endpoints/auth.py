@@ -10,6 +10,15 @@ from app.services.auth_service import AuthService
 from app.services.logging_service import get_logging_service
 from app.core.logging_config import LogModule
 from typing import Optional
+import os
+
+# Google OAuth imports
+try:
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
+    GOOGLE_OAUTH_AVAILABLE = True
+except ImportError:
+    GOOGLE_OAUTH_AVAILABLE = False
 
 router = APIRouter()
 security = HTTPBearer()
@@ -155,10 +164,12 @@ async def create_demo_account(db: Session = Depends(get_db)):
 async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
     """Handle Google OAuth sign-in"""
     try:
-        # Verify Google ID token
-        from google.auth.transport import requests
-        from google.oauth2 import id_token
-        import os
+        # Check if Google OAuth is available
+        if not GOOGLE_OAUTH_AVAILABLE:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth dependencies not available"
+            )
         
         google_client_id = os.getenv("GOOGLE_CLIENT_ID")
         if not google_client_id:
@@ -171,7 +182,7 @@ async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(
             # Verify the token
             idinfo = id_token.verify_oauth2_token(
                 oauth_request.id_token, 
-                requests.Request(), 
+                google_requests.Request(), 
                 google_client_id
             )
             
