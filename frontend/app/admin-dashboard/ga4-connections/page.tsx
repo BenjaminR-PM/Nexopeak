@@ -1,0 +1,488 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Avatar,
+  Menu,
+  MenuItem,
+  TextField,
+  InputAdornment,
+  Alert,
+} from '@mui/material'
+import {
+  ArrowBack,
+  Search,
+  Link as LinkIcon,
+  CheckCircle,
+  Error,
+  Warning,
+  Refresh,
+  AccountCircle,
+  Logout,
+  Download,
+} from '@mui/icons-material'
+import Link from 'next/link'
+
+export default function GA4ConnectionsAdminPage() {
+  const [user, setUser] = useState<any>(null)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if user is authenticated and is admin
+    const token = localStorage.getItem('access_token')
+    const userData = localStorage.getItem('user_data')
+    
+    if (!token || !userData) {
+      router.push('/admin-login')
+      return
+    }
+
+    try {
+      const user = JSON.parse(userData)
+      if (user.role !== 'admin') {
+        router.push('/admin-login')
+        return
+      }
+      setUser(user)
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+      router.push('/admin-login')
+    }
+  }, [router])
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_data')
+    router.push('/admin-login')
+  }
+
+  // Mock GA4 connections data (replace with real API call)
+  const ga4Connections = [
+    {
+      id: 1,
+      organization: 'Acme Corp',
+      propertyId: 'G-XXXXXXXXX1',
+      propertyName: 'Acme Website',
+      status: 'connected',
+      lastSync: '2025-01-15 14:30',
+      events: '45.2K',
+      apiCalls: '1,250',
+      dataQuality: 'excellent',
+      owner: 'john@acme.com'
+    },
+    {
+      id: 2,
+      organization: 'TechStart Inc',
+      propertyId: 'G-XXXXXXXXX2',
+      propertyName: 'TechStart App',
+      status: 'error',
+      lastSync: '2025-01-14 09:15',
+      events: '12.8K',
+      apiCalls: '890',
+      dataQuality: 'poor',
+      owner: 'sarah@techstart.com'
+    },
+    {
+      id: 3,
+      organization: 'Global Retail',
+      propertyId: 'G-XXXXXXXXX3',
+      propertyName: 'E-commerce Site',
+      status: 'warning',
+      lastSync: '2025-01-15 16:45',
+      events: '89.1K',
+      apiCalls: '2,100',
+      dataQuality: 'good',
+      owner: 'mike@globalretail.com'
+    },
+    {
+      id: 4,
+      organization: 'Digital Agency',
+      propertyId: 'G-XXXXXXXXX4',
+      propertyName: 'Client Portfolio',
+      status: 'connected',
+      lastSync: '2025-01-15 17:20',
+      events: '23.5K',
+      apiCalls: '675',
+      dataQuality: 'good',
+      owner: 'lisa@agency.com'
+    }
+  ]
+
+  const getStatusChip = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return <Chip label="Connected" color="success" size="small" icon={<CheckCircle />} />
+      case 'error':
+        return <Chip label="Error" color="error" size="small" icon={<Error />} />
+      case 'warning':
+        return <Chip label="Warning" color="warning" size="small" icon={<Warning />} />
+      default:
+        return <Chip label="Unknown" size="small" />
+    }
+  }
+
+  const getDataQualityColor = (quality: string) => {
+    switch (quality) {
+      case 'excellent': return '#10b981'
+      case 'good': return '#f59e0b'
+      case 'poor': return '#ef4444'
+      default: return '#6b7280'
+    }
+  }
+
+  const filteredConnections = ga4Connections.filter(conn => {
+    const matchesSearch = conn.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         conn.propertyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         conn.owner.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterStatus === 'all' || conn.status === filterStatus
+    return matchesSearch && matchesFilter
+  })
+
+  const statusCounts = {
+    total: ga4Connections.length,
+    connected: ga4Connections.filter(c => c.status === 'connected').length,
+    error: ga4Connections.filter(c => c.status === 'error').length,
+    warning: ga4Connections.filter(c => c.status === 'warning').length
+  }
+
+  if (!user) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Typography>Loading...</Typography>
+      </Box>
+    )
+  }
+
+  return (
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #dc2626 100%)'
+    }}>
+      {/* Header */}
+      <AppBar position="static" sx={{ backgroundColor: 'rgba(30, 58, 138, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <Toolbar>
+          <Link href="/admin-dashboard" style={{ textDecoration: 'none', color: 'inherit', marginRight: '16px' }}>
+            <IconButton color="inherit">
+              <ArrowBack />
+            </IconButton>
+          </Link>
+          <LinkIcon sx={{ mr: 2, color: '#ef4444' }} />
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            GA4 Connections Management
+          </Typography>
+          
+          <Chip 
+            label="PLATFORM ADMIN" 
+            size="small" 
+            sx={{ 
+              backgroundColor: '#ef4444', 
+              color: 'white', 
+              fontWeight: 600,
+              mr: 2
+            }} 
+          />
+
+          <IconButton
+            size="large"
+            aria-label="account menu"
+            onClick={handleMenuClick}
+            color="inherit"
+          >
+            <Avatar sx={{ bgcolor: '#ef4444', width: 32, height: 32 }}>
+              {user.name?.charAt(0) || user.email?.charAt(0) || 'A'}
+            </Avatar>
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleMenuClose}>
+              <AccountCircle sx={{ mr: 1 }} />
+              Profile
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <Logout sx={{ mr: 1 }} />
+              Logout
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+
+      {/* Content */}
+      <Box sx={{ p: 4 }}>
+        {/* Page Header */}
+        <Card sx={{ mb: 4, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Box display="flex" alignItems="center">
+                <LinkIcon sx={{ fontSize: 40, color: '#dc2626', mr: 2 }} />
+                <Box>
+                  <Typography variant="h4" component="h1" fontWeight={700} color="#1e3a8a">
+                    GA4 Connections Overview
+                  </Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Monitor all Google Analytics 4 integrations across client organizations
+                  </Typography>
+                </Box>
+              </Box>
+              <Box display="flex" gap={2}>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<Refresh />}
+                  sx={{ 
+                    borderColor: '#dc2626', 
+                    color: '#dc2626',
+                    '&:hover': { borderColor: '#b91c1c', backgroundColor: 'rgba(220, 38, 38, 0.04)' }
+                  }}
+                >
+                  Sync All
+                </Button>
+                <Button 
+                  variant="contained" 
+                  startIcon={<Download />}
+                  sx={{ 
+                    backgroundColor: '#dc2626', 
+                    '&:hover': { backgroundColor: '#b91c1c' }
+                  }}
+                >
+                  Export Report
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Status Overview Cards */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3, mb: 4 }}>
+          <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h3" fontWeight={700} color="#1e3a8a">
+                {statusCounts.total}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Connections
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h3" fontWeight={700} color="#10b981">
+                {statusCounts.connected}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Active & Healthy
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h3" fontWeight={700} color="#f59e0b">
+                {statusCounts.warning}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Need Attention
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h3" fontWeight={700} color="#ef4444">
+                {statusCounts.error}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Critical Issues
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Filters and Search */}
+        <Card sx={{ mb: 4, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+          <CardContent>
+            <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+              <TextField
+                placeholder="Search connections..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                size="small"
+                sx={{ minWidth: 300 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button 
+                variant={filterStatus === 'all' ? 'contained' : 'outlined'}
+                onClick={() => setFilterStatus('all')}
+                size="small"
+              >
+                All ({statusCounts.total})
+              </Button>
+              <Button 
+                variant={filterStatus === 'connected' ? 'contained' : 'outlined'}
+                onClick={() => setFilterStatus('connected')}
+                size="small"
+                color="success"
+              >
+                Connected ({statusCounts.connected})
+              </Button>
+              <Button 
+                variant={filterStatus === 'warning' ? 'contained' : 'outlined'}
+                onClick={() => setFilterStatus('warning')}
+                size="small"
+                color="warning"
+              >
+                Warning ({statusCounts.warning})
+              </Button>
+              <Button 
+                variant={filterStatus === 'error' ? 'contained' : 'outlined'}
+                onClick={() => setFilterStatus('error')}
+                size="small"
+                color="error"
+              >
+                Error ({statusCounts.error})
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Connections Table */}
+        <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+          <CardContent>
+            <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Organization</strong></TableCell>
+                    <TableCell><strong>GA4 Property</strong></TableCell>
+                    <TableCell><strong>Status</strong></TableCell>
+                    <TableCell><strong>Last Sync</strong></TableCell>
+                    <TableCell><strong>Events (24h)</strong></TableCell>
+                    <TableCell><strong>API Calls</strong></TableCell>
+                    <TableCell><strong>Data Quality</strong></TableCell>
+                    <TableCell><strong>Owner</strong></TableCell>
+                    <TableCell><strong>Actions</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredConnections.map((connection) => (
+                    <TableRow key={connection.id} hover>
+                      <TableCell>
+                        <Typography fontWeight={600}>{connection.organization}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" fontWeight={500}>
+                            {connection.propertyName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {connection.propertyId}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusChip(connection.status)}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{connection.lastSync}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {connection.events}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{connection.apiCalls}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={connection.dataQuality} 
+                          size="small"
+                          sx={{ 
+                            backgroundColor: `${getDataQualityColor(connection.dataQuality)}20`,
+                            color: getDataQualityColor(connection.dataQuality),
+                            fontWeight: 500
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{connection.owner}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" gap={1}>
+                          <Button size="small" variant="outlined">
+                            View
+                          </Button>
+                          <Button size="small" variant="outlined" color="warning">
+                            Test
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {filteredConnections.length === 0 && (
+              <Box textAlign="center" py={4}>
+                <Typography variant="body1" color="text.secondary">
+                  No connections found matching your criteria.
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* System Alerts */}
+        {statusCounts.error > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <strong>Action Required:</strong> {statusCounts.error} GA4 connection{statusCounts.error > 1 ? 's have' : ' has'} critical issues that need immediate attention.
+            </Alert>
+          </Box>
+        )}
+        
+        {statusCounts.warning > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Alert severity="warning">
+              <strong>Attention:</strong> {statusCounts.warning} GA4 connection{statusCounts.warning > 1 ? 's need' : ' needs'} monitoring due to potential issues.
+            </Alert>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  )
+}
