@@ -160,7 +160,7 @@ export default function ClientManagementPage() {
   }, [searchTerm])
 
   // Handle create client
-  const handleCreateClient = async (clientData) => {
+  const handleCreateClient = async (clientData: any) => {
     try {
       const token = localStorage.getItem('access_token')
       
