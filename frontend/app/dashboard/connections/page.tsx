@@ -209,7 +209,7 @@ export default function ConnectionsPage() {
 
   const handleConnect = async (connectionId: string) => {
     if (connectionId === 'ga4') {
-      // Redirect to Google Analytics OAuth
+      // Handle Google Analytics OAuth
       const token = localStorage.getItem('access_token')
       if (!token) {
         setAlertMessage('Please log in to connect Google Analytics')
@@ -220,14 +220,53 @@ export default function ConnectionsPage() {
       }
       
       try {
-        // Redirect to backend Google Analytics OAuth endpoint
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-        window.location.href = `${apiUrl}/api/v1/connections/google-analytics/auth`
+        // Set loading state
+        setConnections(prev => 
+          prev.map(conn => 
+            conn.id === connectionId 
+              ? { ...conn, status: 'pending' as const }
+              : conn
+          )
+        )
+        
+        // Make authenticated request to backend OAuth endpoint
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend.herokuapp.com'
+        const response = await fetch(`${apiUrl}/api/v1/connections/google-analytics/auth`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          // Get the redirect URL from the response
+          const data = await response.json()
+          if (data.redirect_url) {
+            // Redirect to Google OAuth
+            window.location.href = data.redirect_url
+          } else {
+            throw new Error('No redirect URL received')
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
       } catch (error) {
-        setAlertMessage('Failed to initiate Google Analytics connection')
+        console.error('Failed to initiate Google Analytics connection:', error)
+        
+        // Reset to disconnected state
+        setConnections(prev => 
+          prev.map(conn => 
+            conn.id === connectionId 
+              ? { ...conn, status: 'disconnected' as const }
+              : conn
+          )
+        )
+        
+        setAlertMessage('Failed to initiate Google Analytics connection. Please try again.')
         setAlertSeverity('error')
         setShowAlert(true)
-        setTimeout(() => setShowAlert(false), 3000)
+        setTimeout(() => setShowAlert(false), 5000)
       }
     } else {
       // Mock connection for other providers
@@ -242,8 +281,8 @@ export default function ConnectionsPage() {
       setAlertSeverity('success')
       setShowAlert(true)
       setTimeout(() => setShowAlert(false), 3000)
-    }
-  }
+        }
+      }
 
   const handleDisconnect = (connectionId: string) => {
     setConnections(prev => 

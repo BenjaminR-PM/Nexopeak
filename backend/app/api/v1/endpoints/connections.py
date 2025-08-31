@@ -151,7 +151,11 @@ async def google_analytics_auth_redirect(
             user_id=current_user.id
         )
         
-        return RedirectResponse(url=authorization_url)
+        # Return JSON response with redirect URL instead of direct redirect
+        return {
+            "redirect_url": authorization_url,
+            "message": "Google Analytics OAuth initiated successfully"
+        }
         
     except Exception as e:
         logging_service.log_error(
