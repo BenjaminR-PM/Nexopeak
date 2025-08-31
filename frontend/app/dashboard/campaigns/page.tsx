@@ -137,11 +137,19 @@ export default function CampaignsPortfolioPage() {
 
         try {
           const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+          
+          // Add timeout to prevent hanging
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+          
           const response = await fetch(`${API_URL}/api/v1/campaigns`, {
             headers: {
               'Authorization': `Bearer ${token}`
-            }
+            },
+            signal: controller.signal
           })
+
+          clearTimeout(timeoutId)
 
           if (response.ok) {
             const data = await response.json()
@@ -169,6 +177,18 @@ export default function CampaignsPortfolioPage() {
 
     // Call the function immediately
     loadCampaigns()
+    
+    // Fallback timeout - if loading takes too long, show mock data
+    const fallbackTimeout = setTimeout(() => {
+      if (loading && campaigns.length === 0) {
+        console.log('Fallback timeout triggered, showing mock data')
+        setCampaigns(mockCampaigns)
+        setFilteredCampaigns(mockCampaigns)
+        setLoading(false)
+      }
+    }, 5000) // 5 second fallback
+
+    return () => clearTimeout(fallbackTimeout)
   }, [])
 
   // Filter campaigns
@@ -205,6 +225,8 @@ export default function CampaignsPortfolioPage() {
       platformFilter
     })
   }, [loading, campaigns.length, filteredCampaigns.length, searchTerm, statusFilter, platformFilter])
+
+
 
   const handleStatusChange = async (campaignId: string, newStatus: Campaign['status']) => {
     try {
