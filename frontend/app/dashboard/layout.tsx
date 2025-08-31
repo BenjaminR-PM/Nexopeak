@@ -14,7 +14,6 @@ import {
   User,
   Menu,
   X,
-  CampaignIcon,
   BarChart,
   PieChart,
   Activity,
@@ -187,7 +186,7 @@ export default function DashboardLayout({
                     href="/dashboard/campaigns"
                     className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   >
-                    <CampaignIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                    <Target className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                     Campaigns
                   </Link>
 
