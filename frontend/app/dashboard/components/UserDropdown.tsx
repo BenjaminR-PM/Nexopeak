@@ -29,23 +29,26 @@ export default function UserDropdown({
   userEmail 
 }: UserDropdownProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [currentUser, setCurrentUser] = useState({ name: 'Demo User', email: 'demo@nexopeak.com' })
+  const [currentUser, setCurrentUser] = useState({ name: '', email: '' })
   const router = useRouter()
   const open = Boolean(anchorEl)
 
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem('user_data')
-    const demoUser = localStorage.getItem('demo_user')
     
     if (userData) {
-      const user = JSON.parse(userData)
-      setCurrentUser({ name: user.name, email: user.email })
-    } else if (demoUser) {
-      const user = JSON.parse(demoUser)
-      setCurrentUser({ name: user.name, email: user.email })
+      try {
+        const user = JSON.parse(userData)
+        setCurrentUser({ name: user.name || 'User', email: user.email || '' })
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+        setCurrentUser({ name: 'User', email: '' })
+      }
     } else if (userName && userEmail) {
       setCurrentUser({ name: userName, email: userEmail })
+    } else {
+      setCurrentUser({ name: 'User', email: '' })
     }
   }, [userName, userEmail])
 
@@ -69,7 +72,6 @@ export default function UserDropdown({
   const handleLogout = () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('user_data')
-    localStorage.removeItem('demo_user') // Keep for backward compatibility
     window.location.href = '/auth/login'
   }
 
@@ -122,10 +124,10 @@ export default function UserDropdown({
         {/* Profile Header */}
         <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {userName}
+            {currentUser.name}
           </Typography>
           <Typography variant="caption" sx={{ color: '#6b7280' }}>
-            {userEmail}
+            {currentUser.email}
           </Typography>
         </Box>
 

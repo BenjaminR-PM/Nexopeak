@@ -103,22 +103,37 @@ export default function DashboardLayout({
 
     const loadCampaigns = async () => {
       try {
-        // Mock campaigns data - replace with API call
-        const mockCampaigns = [
-          { id: '1', name: 'Summer Sale Campaign', status: 'active', type: 'search' },
-          { id: '2', name: 'Brand Awareness Q4', status: 'draft', type: 'display' },
-          { id: '3', name: 'Holiday Shopping', status: 'active', type: 'shopping' },
-          { id: '4', name: 'Mobile App Promotion', status: 'paused', type: 'app' },
-        ]
-        setCampaigns(mockCampaigns)
-        
-        // Set first active campaign as selected
-        const activeCampaign = mockCampaigns.find(c => c.status === 'active')
-        if (activeCampaign) {
-          setSelectedCampaign(activeCampaign.id)
+        const token = localStorage.getItem('access_token')
+        if (!token) {
+          setCampaigns([])
+          return
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'}/api/v1/campaigns`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setCampaigns(data.campaigns || [])
+          
+          // Set first active campaign as selected
+          if (data.campaigns && data.campaigns.length > 0) {
+            const activeCampaign = data.campaigns.find((c: any) => c.status === 'active')
+            if (activeCampaign) {
+              setSelectedCampaign(activeCampaign.id)
+            } else {
+              setSelectedCampaign(data.campaigns[0].id)
+            }
+          }
+        } else {
+          setCampaigns([])
         }
       } catch (error) {
         console.error('Failed to load campaigns:', error)
+        setCampaigns([])
       }
     }
 
@@ -202,40 +217,7 @@ export default function DashboardLayout({
         })}
       </List>
 
-      {/* User Section */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: '#fef3c7', color: '#f97316', mr: 2 }}>
-            <UserIcon />
-          </Avatar>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }} noWrap>
-              Demo User
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#6b7280' }} noWrap>
-              demo@nexopeak.com
-            </Typography>
-          </Box>
-        </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<LogOutIcon />}
-          onClick={handleLogout}
-          fullWidth
-          sx={{
-            fontSize: '0.75rem',
-            color: '#dc2626',
-            borderColor: '#dc2626',
-            '&:hover': {
-              borderColor: '#b91c1c',
-              bgcolor: '#fef2f2',
-            },
-          }}
-        >
-          Logout
-        </Button>
-      </Box>
+
     </Box>
   )
 
@@ -374,7 +356,7 @@ export default function DashboardLayout({
 
               <Divider orientation="vertical" flexItem />
 
-              <UserDropdown userName="Demo User" userEmail="demo@nexopeak.com" />
+              <UserDropdown />
             </Box>
           </Toolbar>
         </AppBar>

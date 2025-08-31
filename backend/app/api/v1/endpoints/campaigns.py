@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
@@ -6,6 +7,9 @@ from uuid import UUID
 from app.core.database import get_db
 from app.models.user import User
 from app.services.campaign_service import CampaignAnalyzerService
+from app.services.auth_service import AuthService
+from app.core.security import verify_token
+from app.core.logging_config import get_logging_service, LogModule
 from app.schemas.campaign import (
     Campaign, CampaignCreate, CampaignUpdate, CampaignListResponse,
     CampaignQuestionnaire, StartAnalysisRequest,
@@ -13,18 +17,33 @@ from app.schemas.campaign import (
 )
 
 router = APIRouter()
+security = HTTPBearer()
+logging_service = get_logging_service()
 
 # Constants
 CAMPAIGN_NOT_FOUND = "Campaign not found"
 
-# Dependency to get current user (simplified for demo)
-async def get_current_user(db: Session = Depends(get_db)) -> User:
-    # TODO: Implement proper JWT authentication
-    # For demo purposes, return a mock user
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="No users found")
-    return user
+# Dependency to get current user with proper JWT authentication
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current user from JWT token."""
+    try:
+        payload = verify_token(credentials.credentials)
+        user = AuthService.get_user_by_email(db, payload.get("sub"))
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="User not found"
+            )
+        return user
+    except Exception as e:
+        logging_service.log(LogModule.AUTH, f"Invalid authentication credentials: {e}", "ERROR")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials"
+        )
 
 @router.post("/", response_model=Campaign)
 async def create_campaign(
