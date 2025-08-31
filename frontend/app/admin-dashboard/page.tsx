@@ -123,7 +123,7 @@ export default function AdminDashboardPage() {
       title: 'User Management',
       description: 'Manage users, roles, and access permissions',
       icon: People,
-      href: '/dashboard/admin',
+      href: '/admin-dashboard/users',
       color: '#1e40af',
       stats: '234 Users',
       priority: 'medium'
