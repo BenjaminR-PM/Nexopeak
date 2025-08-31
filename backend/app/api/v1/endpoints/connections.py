@@ -13,7 +13,7 @@ from app.models.connection import Connection
 from app.models.organization import Organization
 from app.services.auth_service import AuthService
 from app.core.security import verify_token
-from app.core.logging_config import get_logging_service, LogModule
+from app.services.logging_service import get_logging_service, LogModule
 
 # Google Analytics imports
 try:

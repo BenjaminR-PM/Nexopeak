@@ -230,7 +230,7 @@ export default function ConnectionsPage() {
         )
         
         // Make authenticated request to backend OAuth endpoint
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend.herokuapp.com'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
         const response = await fetch(`${apiUrl}/api/v1/connections/google-analytics/auth`, {
           method: 'GET',
           headers: {
