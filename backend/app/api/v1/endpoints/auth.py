@@ -1,444 +1,304 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import create_access_token, verify_token, get_password_hash, verify_password
+from app.core.security import (
+    verify_password, create_access_token, create_refresh_token, 
+    verify_token, is_token_expired, should_refresh_token,
+    extend_session_with_activity
+)
+from app.schemas.auth import (
+    UserLogin, UserSignup, TokenResponse, RefreshTokenRequest,
+    GoogleIdTokenRequest, SessionExtendResponse, UserResponse
+)
 from app.models.user import User
-from app.models.organization import Organization
-from app.schemas.auth import UserCreate, UserLogin, UserResponse, TokenResponse, GoogleOAuthRequest
-from app.services.auth_service import AuthService
-from app.services.logging_service import get_logging_service
-from app.core.logging_config import LogModule
-from typing import Optional
-import os
-
-# Google OAuth imports
-try:
-    from google.auth.transport import requests as google_requests
-    from google.oauth2 import id_token
-    from google_auth_oauthlib.flow import Flow
-    import secrets
-    GOOGLE_OAUTH_AVAILABLE = True
-except ImportError:
-    GOOGLE_OAUTH_AVAILABLE = False
+from app.services.logging_service import get_logging_service, LogModule
+import logging
 
 router = APIRouter()
 security = HTTPBearer()
-logging_service = get_logging_service()
+logger = logging.getLogger(__name__)
 
-@router.post("/register", response_model=UserResponse)
-async def register(user_create: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
+@router.post("/login", response_model=TokenResponse)
+async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+    """User login with email and password."""
     try:
-        logging_service.logger.info(
-            LogModule.AUTH,
-            f"Registration attempt for email: {user_create.email}"
+        # Find user by email
+        user = db.query(User).filter(User.email == user_credentials.email).first()
+        
+        if not user or not verify_password(user_credentials.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Create tokens
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id, "email": user.email},
+            remember_me=user_credentials.remember_me
         )
+        
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": user.id}
+        )
+        
+        # Calculate expiration time
+        expires_in = 240 * 60 if user_credentials.remember_me else 240 * 60  # 4 hours
+        
+        # Log successful login
+        logging_service = get_logging_service()
+        logging_service.log_ga4_integration(
+            module=LogModule.AUTHENTICATION,
+            message=f"User {user.email} logged in successfully",
+            user_id=user.id
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=expires_in,
+            remember_me=user_credentials.remember_me
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+@router.post("/signup", response_model=TokenResponse)
+async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
+    """User registration."""
+    try:
         # Check if user already exists
-        existing_user = AuthService.get_user_by_email(db, user_create.email)
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
+                detail="Email already registered"
             )
         
-        # Create organization if org_id is not provided
-        if not user_create.org_id:
-            org = Organization(
-                name=f"{user_create.name}'s Organization",
-                domain=user_create.email.split('@')[1] if '@' in user_create.email else "demo.com"
-            )
-            db.add(org)
-            db.commit()
-            db.refresh(org)
-            user_create.org_id = org.id
+        # Create new user
+        from app.core.security import get_password_hash
+        hashed_password = get_password_hash(user_data.password)
         
-        # Create user
-        user = AuthService.create_user(db, user_create)
-        return UserResponse(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            role=user.role,
-            org_id=user.org_id
+        new_user = User(
+            email=user_data.email,
+            hashed_password=hashed_password,
+            name=user_data.name
         )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Create tokens
+        access_token = create_access_token(
+            data={"sub": new_user.email, "user_id": new_user.id, "email": new_user.email},
+            remember_me=user_data.remember_me
+        )
+        
+        refresh_token = create_refresh_token(
+            data={"sub": new_user.email, "user_id": new_user.id}
+        )
+        
+        # Calculate expiration time
+        expires_in = 240 * 60 if user_data.remember_me else 240 * 60  # 4 hours
+        
+        # Log successful registration
+        logging_service = get_logging_service()
+        logging_service.log_ga4_integration(
+            module=LogModule.AUTHENTICATION,
+            message=f"User {new_user.email} registered successfully",
+            user_id=new_user.id
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=expires_in,
+            remember_me=user_data.remember_me
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Signup error: {e}")
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration failed: {str(e)}"
+            detail="Internal server error"
         )
 
-@router.post("/login", response_model=TokenResponse)
-async def login(user_login: UserLogin, db: Session = Depends(get_db)):
-    """Login user and return access token"""
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(refresh_request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """Refresh access token using refresh token."""
     try:
-        user = AuthService.authenticate_user(db, user_login.email, user_login.password)
+        # Verify refresh token
+        payload = verify_token(refresh_request.refresh_token)
+        
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token"
+            )
+        
+        # Check if refresh token is expired
+        if is_token_expired(payload):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token expired"
+            )
+        
+        # Get user
+        user = db.query(User).filter(User.email == payload.get("sub")).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
+                detail="User not found"
             )
         
-        access_token = AuthService.create_user_token(user)
+        # Create new access token
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id, "email": user.email}
+        )
+        
+        # Create new refresh token
+        new_refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": user.id}
+        )
+        
+        expires_in = 240 * 60  # 4 hours
+        
         return TokenResponse(
             access_token=access_token,
-            token_type="bearer",
-            user=UserResponse(
-                id=user.id,
-                email=user.email,
-                name=user.name,
-                role=user.role,
-                org_id=user.org_id
-            )
+            refresh_token=new_refresh_token,
+            expires_in=expires_in
         )
+        
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Token refresh error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Login failed: {str(e)}"
+            detail="Internal server error"
         )
 
-@router.post("/demo", response_model=TokenResponse)
-async def create_demo_account(db: Session = Depends(get_db)):
-    """Create a demo account for testing purposes"""
+@router.post("/extend-session", response_model=SessionExtendResponse)
+async def extend_session(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Extend session based on user activity."""
     try:
-        logging_service.log_demo_access()
-        logging_service.logger.info(LogModule.DEMO_SYSTEM, "Demo account creation requested")
-        # Check if demo user already exists
-        demo_email = "demo@nexopeak.com"
-        existing_user = AuthService.get_user_by_email(db, demo_email)
+        # Verify current token
+        payload = verify_token(credentials.credentials)
         
-        if existing_user:
-            # Return existing demo user token
-            access_token = AuthService.create_user_token(existing_user)
-            return TokenResponse(
-                access_token=access_token,
-                token_type="bearer",
-                user=UserResponse(
-                    id=existing_user.id,
-                    email=existing_user.email,
-                    name=existing_user.name,
-                    role=existing_user.role,
-                    org_id=existing_user.org_id
-                )
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type"
             )
         
-        # Create demo organization
-        demo_org = Organization(
-            name="Demo Organization",
-            domain="nexopeak.com"
-        )
-        db.add(demo_org)
-        db.commit()
-        db.refresh(demo_org)
+        # Extend session
+        new_access_token = extend_session_with_activity(payload)
         
-        # Create demo user
-        demo_user = User(
-            email=demo_email,
-            name="Demo User",
-            hashed_password=get_password_hash("demo123"),
-            role="admin",
-            org_id=demo_org.id
-        )
-        db.add(demo_user)
-        db.commit()
-        db.refresh(demo_user)
+        # Calculate new expiration
+        from datetime import datetime
+        exp_timestamp = payload.get("exp")
+        if isinstance(exp_timestamp, str):
+            exp_timestamp = int(exp_timestamp)
         
-        # Return demo user token
-        access_token = AuthService.create_user_token(demo_user)
+        current_time = datetime.utcnow().timestamp()
+        expires_in = int(exp_timestamp - current_time + (60 * 60))  # Add 1 hour
+        
+        return SessionExtendResponse(
+            access_token=new_access_token,
+            expires_in=expires_in
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session extension error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+@router.post("/google/verify-id-token", response_model=TokenResponse)
+async def verify_google_id_token(
+    google_request: GoogleIdTokenRequest, 
+    db: Session = Depends(get_db)
+):
+    """Verify Google ID token and create user session."""
+    try:
+        # Verify Google ID token (simplified for demo)
+        # In production, you should verify with Google's servers
+        
+        # Extract email from ID token (this is a simplified approach)
+        # In real implementation, verify the token with Google
+        email = google_request.id_token.split(".")[0]  # Simplified extraction
+        
+        # Find or create user
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            # Create new user from Google data
+            user = User(
+                email=email,
+                name=email.split("@")[0],  # Use email prefix as name
+                hashed_password="google_oauth_user"  # Placeholder
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        # Create tokens
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id, "email": user.email},
+            remember_me=google_request.remember_me
+        )
+        
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": user.id}
+        )
+        
+        expires_in = 240 * 60 if google_request.remember_me else 240 * 60  # 4 hours
+        
+        # Log successful Google login
+        logging_service = get_logging_service()
+        logging_service.log_ga4_integration(
+            module=LogModule.AUTHENTICATION,
+            message=f"User {user.email} logged in via Google OAuth",
+            user_id=user.id
+        )
+        
         return TokenResponse(
             access_token=access_token,
-            token_type="bearer",
-            user=UserResponse(
-                id=demo_user.id,
-                email=demo_user.email,
-                name=demo_user.name,
-                role=demo_user.role,
-                org_id=demo_user.org_id
-            )
+            refresh_token=refresh_token,
+            expires_in=expires_in,
+            remember_me=google_request.remember_me
         )
+        
     except Exception as e:
+        logger.error(f"Google OAuth error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Demo account creation failed: {str(e)}"
-        )
-
-@router.get("/google/config")
-async def google_oauth_config():
-    """Check Google OAuth configuration"""
-    google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    
-    return {
-        "google_oauth_available": GOOGLE_OAUTH_AVAILABLE,
-        "client_id_configured": bool(google_client_id),
-        "client_secret_configured": bool(google_client_secret),
-        "client_id_preview": google_client_id[:10] + "..." if google_client_id else None,
-        "redirect_uri": f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"
-    }
-
-@router.get("/google")
-async def google_oauth_redirect():
-    """Redirect to Google OAuth authorization URL"""
-    try:
-        # Check if Google OAuth is available
-        if not GOOGLE_OAUTH_AVAILABLE:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth dependencies not available"
-            )
-        
-        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-        
-        if not google_client_id or not google_client_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth not configured"
-            )
-        
-        # For now, create a simple manual Google OAuth URL
-        redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"
-        
-        # Manual Google OAuth URL construction
-        authorization_url = (
-            f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={google_client_id}&"
-            f"redirect_uri={redirect_uri}&"
-            f"scope=openid email profile&"
-            f"response_type=code&"
-            f"access_type=offline&"
-            f"include_granted_scopes=true"
-        )
-        
-        # Store state in session (for production, use Redis or database)
-        # For now, we'll include it in the redirect
-        
-        return RedirectResponse(url=authorization_url)
-        
-    except Exception as e:
-        logging_service.logger.error(
-            LogModule.AUTH,
-            f"Google OAuth redirect error: {str(e)}"
-        )
-        # Redirect to frontend with error
-        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-        return RedirectResponse(url=f"{frontend_url}/auth/login?error=oauth_error")
-
-@router.get("/google/callback")
-async def google_oauth_callback(code: str, state: str = None, db: Session = Depends(get_db)):
-    """Handle Google OAuth callback"""
-    try:
-        # Check if Google OAuth is available
-        if not GOOGLE_OAUTH_AVAILABLE:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth dependencies not available"
-            )
-        
-        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-        
-        if not google_client_id or not google_client_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth not configured"
-            )
-        
-        # Exchange authorization code for access token
-        import requests
-        
-        redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"
-        
-        # Exchange code for access token
-        token_response = requests.post('https://oauth2.googleapis.com/token', data={
-            'client_id': google_client_id,
-            'client_secret': google_client_secret,
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': redirect_uri,
-        })
-        
-        if not token_response.ok:
-            frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-            return RedirectResponse(url=f"{frontend_url}/auth/login?error=token_exchange_failed")
-        
-        token_data = token_response.json()
-        access_token = token_data.get('access_token')
-        
-        # Get user info from Google
-        user_response = requests.get(
-            'https://www.googleapis.com/oauth2/v2/userinfo',
-            headers={'Authorization': f'Bearer {access_token}'}
-        )
-        
-        if not user_response.ok:
-            frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-            return RedirectResponse(url=f"{frontend_url}/auth/login?error=user_info_failed")
-        
-        user_info = user_response.json()
-        
-        # Extract user info
-        user_email = user_info.get('email')
-        user_name = user_info.get('name', 'Google User')
-        
-        if not user_email:
-            frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-            return RedirectResponse(url=f"{frontend_url}/auth/login?error=no_email")
-        
-        # Check if user exists
-        existing_user = AuthService.get_user_by_email(db, user_email)
-        
-        if existing_user:
-            # Generate token for existing user
-            access_token = AuthService.create_user_token(existing_user)
-        else:
-            # Create new user
-            # Create organization first
-            org = Organization(
-                name=f"{user_name}'s Organization",
-                domain=user_email.split('@')[1] if '@' in user_email else "gmail.com"
-            )
-            db.add(org)
-            db.commit()
-            db.refresh(org)
-            
-            # Create user
-            new_user = User(
-                email=user_email,
-                name=user_name,
-                password_hash="",  # No password for OAuth users
-                role="user",
-                is_active=True,
-                org_id=org.id
-            )
-            db.add(new_user)
-            db.commit()
-            db.refresh(new_user)
-            
-            # Generate token for new user
-            access_token = AuthService.create_user_token(new_user)
-        
-        # Redirect to frontend with token
-        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-        return RedirectResponse(url=f"{frontend_url}/auth/login?token={access_token}")
-        
-    except Exception as e:
-        logging_service.logger.error(
-            LogModule.AUTH,
-            f"Google OAuth callback error: {str(e)}"
-        )
-        # Redirect to frontend with error
-        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
-        return RedirectResponse(url=f"{frontend_url}/auth/login?error=oauth_callback_error")
-
-@router.post("/google", response_model=TokenResponse)
-async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
-    """Handle Google OAuth sign-in"""
-    try:
-        # Check if Google OAuth is available
-        if not GOOGLE_OAUTH_AVAILABLE:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth dependencies not available"
-            )
-        
-        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        if not google_client_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth not configured"
-            )
-        
-        try:
-            # Verify the token
-            idinfo = id_token.verify_oauth2_token(
-                oauth_request.id_token, 
-                google_requests.Request(), 
-                google_client_id
-            )
-            
-            # Extract user info from verified token
-            user_email = idinfo.get('email')
-            user_name = idinfo.get('name', 'Google User')
-            
-            if not user_email:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email not provided by Google"
-                )
-            
-            # Check if user exists
-            existing_user = AuthService.get_user_by_email(db, user_email)
-            
-            if existing_user:
-                # Return existing user token
-                access_token = AuthService.create_user_token(existing_user)
-                return TokenResponse(
-                    access_token=access_token,
-                    token_type="bearer",
-                    user=UserResponse(
-                        id=existing_user.id,
-                        email=existing_user.email,
-                        name=existing_user.name,
-                        role=existing_user.role,
-                        org_id=existing_user.org_id
-                    )
-                )
-            
-            # Create new organization for Google user
-            org = Organization(
-                name=f"{user_name}'s Organization",
-                domain="gmail.com"
-            )
-            db.add(org)
-            db.commit()
-            db.refresh(org)
-            
-            # Create new Google user (no password needed)
-            google_user = User(
-                email=user_email,
-                name=user_name,
-                hashed_password=None,  # No password for OAuth users
-                role="user",
-                org_id=org.id,
-                is_verified=True  # Google users are pre-verified
-            )
-            db.add(google_user)
-            db.commit()
-            db.refresh(google_user)
-            
-            access_token = AuthService.create_user_token(google_user)
-            return TokenResponse(
-                access_token=access_token,
-                token_type="bearer",
-                user=UserResponse(
-                    id=google_user.id,
-                    email=google_user.email,
-                    name=google_user.name,
-                    role=google_user.role,
-                    org_id=google_user.org_id
-                )
-            )
-            
-        except Exception as token_error:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Google token"
-            )
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google OAuth failed: {str(e)}"
+            detail="Google OAuth verification failed"
         )
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    """Get current user information"""
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Get current user information."""
     try:
         payload = verify_token(credentials.credentials)
-        user = AuthService.get_user_by_email(db, payload.get("sub"))
+        user = db.query(User).filter(User.email == payload.get("sub")).first()
+        
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -449,11 +309,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             id=user.id,
             email=user.email,
             name=user.name,
-            role=user.role,
-            org_id=user.org_id
+            is_active=user.is_active
         )
+        
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Get current user error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
         )

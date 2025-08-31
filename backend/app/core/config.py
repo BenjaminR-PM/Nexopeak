@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # 4 hours instead of 30 minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30     # 30 days for refresh tokens
+    REMEMBER_ME_EXPIRE_DAYS: int = 90       # 90 days for "Remember Me" option
+    SESSION_ACTIVITY_TIMEOUT_MINUTES: int = 60  # Extend session by 1 hour with activity
     
     # Database
     DATABASE_URL: str = "postgresql://user:password@localhost/nexopeak"

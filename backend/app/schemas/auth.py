@@ -12,6 +12,13 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    remember_me: Optional[bool] = False
+
+class UserSignup(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    remember_me: Optional[bool] = False
 
 class UserResponse(BaseModel):
     id: UUID
@@ -22,8 +29,19 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str
-    user: UserResponse
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    remember_me: bool = False
 
-class GoogleOAuthRequest(BaseModel):
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+class GoogleIdTokenRequest(BaseModel):
     id_token: str
+    remember_me: Optional[bool] = False
+
+class SessionExtendResponse(BaseModel):
+    access_token: str
+    expires_in: int
+    message: str = "Session extended successfully"
