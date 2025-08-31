@@ -90,7 +90,7 @@ class ClientsListResponse(BaseModel):
 class ClientCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     industry: Optional[str] = Field(None, max_length=100)
-    primary_contact_email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    primary_contact_email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     plan: SubscriptionPlan
     initial_users: int = Field(1, ge=1, le=1000)
 
