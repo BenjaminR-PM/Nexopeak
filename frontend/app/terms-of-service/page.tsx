@@ -330,7 +330,7 @@ export default function TermsOfServicePage() {
                   If you have any questions about these Terms of Service, please contact us:
                 </p>
                 <div className="space-y-2 text-gray-700">
-                  <p><strong>Email:</strong> legal@nexopeak.com</p>
+                  <p><strong>Email:</strong> info@nexopeak.com</p>
                   <p><strong>Address:</strong> Nexopeak Inc., Legal Team</p>
                 </div>
               </section>

@@ -227,7 +227,7 @@ export default function PrivacyPolicyPage() {
                   If you have any questions about this Privacy Policy or our data practices, please contact us:
                 </p>
                 <div className="space-y-2 text-gray-700">
-                  <p><strong>Email:</strong> privacy@nexopeak.com</p>
+                  <p><strong>Email:</strong> info@nexopeak.com</p>
                   <p><strong>Address:</strong> Nexopeak Inc., Privacy Team</p>
                 </div>
               </section>
