@@ -1,25 +1,29 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable build caching for faster builds
+  experimental: {
+    // Enable build cache
+    buildCache: true,
+  },
+  
+  // Optimize build performance
+  swcMinify: true,
+  
+  // Enable compiler optimizations
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  
+  // Output configuration for better caching
   output: 'standalone',
-  images: {
-    domains: ['lh3.googleusercontent.com'],
-  },
+  
+  // Enable static optimization
+  trailingSlash: false,
+  
+  // Environment variables
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY || '',
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com',
-  },
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ],
-      },
-    ]
   },
 }
 
