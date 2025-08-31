@@ -455,7 +455,7 @@ export default function ClientManagementPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayClients.map((client) => (
+                    displayClients.map((client: any) => (
                       <TableRow key={client.id} hover>
                         <TableCell>
                           <Box>

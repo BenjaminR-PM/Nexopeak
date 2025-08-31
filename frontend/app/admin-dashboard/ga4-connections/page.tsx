@@ -147,7 +147,7 @@ export default function GA4ConnectionsAdminPage() {
   }, [searchTerm, filterStatus])
 
   // Format data for display
-  const formatConnectionData = (connection) => ({
+  const formatConnectionData = (connection: any) => ({
     id: connection.id,
     organization: connection.organization_name,
     propertyId: connection.property_id,
@@ -436,7 +436,7 @@ export default function GA4ConnectionsAdminPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayConnections.map((connection) => (
+                    displayConnections.map((connection: any) => (
                       <TableRow key={connection.id} hover>
                         <TableCell>
                           <Typography fontWeight={600}>{connection.organization}</Typography>

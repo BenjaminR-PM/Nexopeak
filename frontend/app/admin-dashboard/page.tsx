@@ -234,7 +234,7 @@ export default function AdminDashboardPage() {
         </Typography>
         
         <Grid container spacing={3} sx={{ mb: 6 }}>
-          {highPriorityModules.map((module) => {
+          {highPriorityModules.map((module: any) => {
             const IconComponent = module.icon
             return (
               <Grid item xs={12} md={6} lg={3} key={module.href}>
@@ -292,7 +292,7 @@ export default function AdminDashboardPage() {
         </Typography>
         
         <Grid container spacing={3} sx={{ mb: 6 }}>
-          {mediumPriorityModules.map((module) => {
+          {mediumPriorityModules.map((module: any) => {
             const IconComponent = module.icon
             return (
               <Grid item xs={12} md={6} key={module.href}>
