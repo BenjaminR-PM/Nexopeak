@@ -12,6 +12,9 @@ import {
   Avatar,
   Paper,
   Alert,
+  Grid,
+  Chip,
+  IconButton,
 } from '@mui/material'
 import {
   BarChart as BarChartIcon,
@@ -22,6 +25,10 @@ import {
   Analytics as AnalyticsIcon,
   TrendingUp as TrendingUpIcon,
   DataUsage as DataUsageIcon,
+  Campaign as CampaignIcon,
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
@@ -203,6 +210,144 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Campaigns Overview */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: '#f97316', color: 'white' }}>
+                <CampaignIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
+                  Campaigns Overview
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                  Manage and monitor your marketing campaigns
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="outlined"
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => window.location.href = '/dashboard/campaigns'}
+              sx={{ borderColor: '#f97316', color: '#f97316', '&:hover': { borderColor: '#ea580c', bgcolor: '#fff7ed' } }}
+            >
+              View All
+            </Button>
+          </Box>
+
+          <Grid container spacing={3}>
+            {/* Campaign Stats */}
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f0fdf4', borderRadius: 2 }}>
+                <Typography variant="h4" sx={{ color: '#16a34a', fontWeight: 'bold' }}>
+                  3
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#15803d' }}>
+                  Active Campaigns
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#fef3c7', borderRadius: 2 }}>
+                <Typography variant="h4" sx={{ color: '#d97706', fontWeight: 'bold' }}>
+                  1
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#b45309' }}>
+                  Paused Campaigns
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#dbeafe', borderRadius: 2 }}>
+                <Typography variant="h4" sx={{ color: '#2563eb', fontWeight: 'bold' }}>
+                  $12.5K
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#1d4ed8' }}>
+                  Total Budget
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e8ff', borderRadius: 2 }}>
+                <Typography variant="h4" sx={{ color: '#7c3aed', fontWeight: 'bold' }}>
+                  2.8x
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#6d28d9' }}>
+                  Avg. ROAS
+                </Typography>
+              </Box>
+            </Grid>
+
+            {/* Recent Campaigns */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                Recent Campaigns
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {[
+                  { name: 'Holiday Shopping Campaign', status: 'active', platform: 'Google Ads', performance: '+12%' },
+                  { name: 'Brand Awareness Q1', status: 'paused', platform: 'Facebook Ads', performance: '-3%' },
+                  { name: 'Product Launch Campaign', status: 'draft', platform: 'Instagram', performance: 'N/A' }
+                ].map((campaign, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2,
+                      bgcolor: '#f9fafb',
+                      borderRadius: 2,
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ bgcolor: campaign.status === 'active' ? '#16a34a' : campaign.status === 'paused' ? '#d97706' : '#6b7280', width: 32, height: 32 }}>
+                        <CampaignIcon fontSize="small" />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {campaign.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          {campaign.platform}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Chip
+                        label={campaign.status.toUpperCase()}
+                        size="small"
+                        sx={{
+                          bgcolor: campaign.status === 'active' ? '#dcfce7' : campaign.status === 'paused' ? '#fef3c7' : '#f3f4f6',
+                          color: campaign.status === 'active' ? '#15803d' : campaign.status === 'paused' ? '#b45309' : '#6b7280',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Typography variant="body2" sx={{ 
+                        color: campaign.performance.includes('+') ? '#16a34a' : campaign.performance.includes('-') ? '#dc2626' : '#6b7280',
+                        fontWeight: 'bold',
+                        minWidth: 40
+                      }}>
+                        {campaign.performance}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => window.location.href = '/dashboard/campaigns'}
+                      >
+                        <ArrowForwardIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* Empty State Charts */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' }, gap: 3, mb: 4 }}>

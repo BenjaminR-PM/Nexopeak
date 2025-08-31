@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Box,
   Card,
@@ -40,6 +41,8 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
   Lightbulb as LightbulbIcon,
+  ArrowBack as ArrowBackIcon,
+  Campaign as CampaignIcon,
 } from '@mui/icons-material'
 
 // Force dynamic rendering to avoid static generation issues
@@ -149,9 +152,12 @@ const successMetricsOptions = [
 ]
 
 export default function CampaignAnalyzerPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeStep, setActiveStep] = useState(0)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [formData, setFormData] = useState<QuestionnaireData>({
     campaign_name: '',
     business_goals: [],
@@ -212,6 +218,17 @@ export default function CampaignAnalyzerPage() {
       }))
     }
   }
+
+  // Check for campaign parameter from campaigns portfolio
+  useEffect(() => {
+    const campaignId = searchParams.get('campaign')
+    if (campaignId) {
+      setSelectedCampaignId(campaignId)
+      // TODO: Load campaign data from API
+      // For now, just set the campaign name
+      setFormData(prev => ({ ...prev, campaign_name: `Campaign ${campaignId}` }))
+    }
+  }, [searchParams])
 
   const handleNext = () => {
     setActiveStep(prev => prev + 1)
@@ -824,9 +841,29 @@ export default function CampaignAnalyzerPage() {
     <Box>
       {/* Page Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          Campaign Analyzer
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          {selectedCampaignId && (
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => router.push('/dashboard/campaigns')}
+              sx={{ color: '#6b7280' }}
+            >
+              Back to Campaigns
+            </Button>
+          )}
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+              Campaign Analyzer
+            </Typography>
+            {selectedCampaignId && (
+              <Chip
+                icon={<CampaignIcon />}
+                label={`Analyzing: ${formData.campaign_name}`}
+                sx={{ bgcolor: '#f97316', color: 'white', fontWeight: 'bold' }}
+              />
+            )}
+          </Box>
+        </Box>
         <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
           Analyze your campaign setup against GA4 data to identify gaps and opportunities
         </Typography>

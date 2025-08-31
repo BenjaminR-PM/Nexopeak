@@ -1,0 +1,734 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Box, Card, CardContent, Typography, Button, Grid, Chip, Avatar, IconButton,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
+  Tabs, Tab, Checkbox, Menu, Tooltip, LinearProgress, Fab
+} from '@mui/material'
+import {
+  Add as AddIcon, FilterList as FilterIcon, ViewList as ListIcon,
+  ViewModule as GridIcon, Search as SearchIcon, MoreVert as MoreIcon,
+  PlayArrow as PlayIcon, Pause as PauseIcon, Edit as EditIcon,
+  Delete as DeleteIcon, FileCopy as CopyIcon, Archive as ArchiveIcon,
+  TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon,
+  Remove as RemoveIcon, Visibility as ViewIcon, Analytics as AnalyticsIcon,
+  Campaign as CampaignIcon, Google as GoogleIcon, Facebook as FacebookIcon,
+  Instagram as InstagramIcon, LinkedIn as LinkedInIcon, Twitter as TwitterIcon,
+  Email as EmailIcon, Web as WebIcon, Refresh as RefreshIcon
+} from '@mui/icons-material'
+
+export const dynamic = 'force-dynamic'
+
+interface Campaign {
+  id: string
+  name: string
+  status: 'active' | 'paused' | 'draft' | 'completed' | 'archived'
+  platform: string
+  type: string
+  budget: {
+    total: number
+    spent: number
+    daily: number
+  }
+  performance: {
+    impressions: number
+    clicks: number
+    ctr: number
+    conversions: number
+    roas: number
+  }
+  dateRange: {
+    start: string
+    end: string
+  }
+  lastModified: string
+  createdBy: string
+}
+
+const mockCampaigns: Campaign[] = [
+  {
+    id: '1',
+    name: 'Holiday Shopping Campaign',
+    status: 'active',
+    platform: 'Google Ads',
+    type: 'Search',
+    budget: { total: 5000, spent: 2340, daily: 150 },
+    performance: { impressions: 45230, clicks: 1820, ctr: 4.02, conversions: 89, roas: 3.2 },
+    dateRange: { start: '2024-01-15', end: '2024-02-15' },
+    lastModified: '2024-01-20T10:30:00Z',
+    createdBy: 'John Doe'
+  },
+  {
+    id: '2',
+    name: 'Brand Awareness Q1',
+    status: 'paused',
+    platform: 'Facebook Ads',
+    type: 'Display',
+    budget: { total: 3000, spent: 1200, daily: 100 },
+    performance: { impressions: 125000, clicks: 890, ctr: 0.71, conversions: 23, roas: 1.8 },
+    dateRange: { start: '2024-01-01', end: '2024-03-31' },
+    lastModified: '2024-01-18T14:20:00Z',
+    createdBy: 'Sarah Smith'
+  },
+  {
+    id: '3',
+    name: 'Product Launch Campaign',
+    status: 'draft',
+    platform: 'Instagram',
+    type: 'Social',
+    budget: { total: 2500, spent: 0, daily: 80 },
+    performance: { impressions: 0, clicks: 0, ctr: 0, conversions: 0, roas: 0 },
+    dateRange: { start: '2024-02-01', end: '2024-02-28' },
+    lastModified: '2024-01-19T09:15:00Z',
+    createdBy: 'Mike Johnson'
+  }
+]
+
+const statusColors = {
+  active: '#4caf50',
+  paused: '#ff9800',
+  draft: '#2196f3',
+  completed: '#9e9e9e',
+  archived: '#757575'
+}
+
+const platformIcons = {
+  'Google Ads': <GoogleIcon sx={{ color: '#4285f4' }} />,
+  'Facebook Ads': <FacebookIcon sx={{ color: '#1877f2' }} />,
+  'Instagram': <InstagramIcon sx={{ color: '#e4405f' }} />,
+  'LinkedIn': <LinkedInIcon sx={{ color: '#0077b5' }} />,
+  'Twitter': <TwitterIcon sx={{ color: '#1da1f2' }} />,
+  'Email': <EmailIcon sx={{ color: '#34a853' }} />,
+  'Website': <WebIcon sx={{ color: '#ff5722' }} />
+}
+
+export default function CampaignsPortfolioPage() {
+  const router = useRouter()
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
+  const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [platformFilter, setPlatformFilter] = useState<string>('all')
+  const [showFilters, setShowFilters] = useState(false)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
+
+  // Load campaigns
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        setLoading(true)
+        const token = localStorage.getItem('access_token')
+        
+        if (!token) {
+          // Use mock data if no token
+          setCampaigns(mockCampaigns)
+          setFilteredCampaigns(mockCampaigns)
+          setLoading(false)
+          return
+        }
+
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+        const response = await fetch(`${API_URL}/api/v1/campaigns`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setCampaigns(data.campaigns || [])
+          setFilteredCampaigns(data.campaigns || [])
+        } else {
+          // Fallback to mock data
+          setCampaigns(mockCampaigns)
+          setFilteredCampaigns(mockCampaigns)
+        }
+      } catch (error) {
+        console.error('Failed to load campaigns:', error)
+        setCampaigns(mockCampaigns)
+        setFilteredCampaigns(mockCampaigns)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCampaigns()
+  }, [])
+
+  // Filter campaigns
+  useEffect(() => {
+    let filtered = campaigns
+
+    if (searchTerm) {
+      filtered = filtered.filter(campaign =>
+        campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        campaign.type.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(campaign => campaign.status === statusFilter)
+    }
+
+    if (platformFilter !== 'all') {
+      filtered = filtered.filter(campaign => campaign.platform === platformFilter)
+    }
+
+    setFilteredCampaigns(filtered)
+  }, [campaigns, searchTerm, statusFilter, platformFilter])
+
+  const handleStatusChange = async (campaignId: string, newStatus: Campaign['status']) => {
+    try {
+      // Update local state immediately
+      setCampaigns(prev => prev.map(campaign =>
+        campaign.id === campaignId ? { ...campaign, status: newStatus } : campaign
+      ))
+
+      // TODO: Make API call to update status
+      // const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}/status`, {
+      //   method: 'PATCH',
+      //   headers: {
+      //     'Authorization': `Bearer ${token}`,
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({ status: newStatus })
+      // })
+    } catch (error) {
+      console.error('Failed to update campaign status:', error)
+    }
+  }
+
+  const handleBulkAction = (action: string) => {
+    console.log(`Bulk action: ${action} on campaigns:`, selectedCampaigns)
+    // TODO: Implement bulk actions
+  }
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, campaignId: string) => {
+    setAnchorEl(event.currentTarget)
+    setSelectedCampaignId(campaignId)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+    setSelectedCampaignId('')
+  }
+
+  const handleCampaignAction = (action: string) => {
+    const campaign = campaigns.find(c => c.id === selectedCampaignId)
+    if (!campaign) return
+
+    switch (action) {
+      case 'edit':
+        router.push(`/dashboard/campaign-generator?edit=${selectedCampaignId}`)
+        break
+      case 'analyze':
+        router.push(`/dashboard/campaign-analyzer?campaign=${selectedCampaignId}`)
+        break
+      case 'duplicate':
+        router.push(`/dashboard/campaign-generator?duplicate=${selectedCampaignId}`)
+        break
+      case 'archive':
+        handleStatusChange(selectedCampaignId, 'archived')
+        break
+      case 'delete':
+        setCampaigns(prev => prev.filter(c => c.id !== selectedCampaignId))
+        break
+    }
+    handleMenuClose()
+  }
+
+  const getPerformanceIcon = (roas: number) => {
+    if (roas > 2.5) return <TrendingUpIcon sx={{ color: '#4caf50', fontSize: 16 }} />
+    if (roas < 1.5) return <TrendingDownIcon sx={{ color: '#f44336', fontSize: 16 }} />
+    return <RemoveIcon sx={{ color: '#ff9800', fontSize: 16 }} />
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num)
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>Campaigns Portfolio</Typography>
+        <LinearProgress />
+      </Box>
+    )
+  }
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            Campaigns Portfolio
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage and monitor all your marketing campaigns
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => router.push('/dashboard/campaign-generator')}
+          sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+        >
+          Create Campaign
+        </Button>
+      </Box>
+
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Total Campaigns
+              </Typography>
+              <Typography variant="h4">
+                {campaigns.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Active Campaigns
+              </Typography>
+              <Typography variant="h4" sx={{ color: '#4caf50' }}>
+                {campaigns.filter(c => c.status === 'active').length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Total Budget
+              </Typography>
+              <Typography variant="h4">
+                {formatCurrency(campaigns.reduce((sum, c) => sum + c.budget.total, 0))}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Total Conversions
+              </Typography>
+              <Typography variant="h4">
+                {formatNumber(campaigns.reduce((sum, c) => sum + c.performance.conversions, 0))}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Filters and Controls */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Search */}
+            <TextField
+              placeholder="Search campaigns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+              }}
+              sx={{ minWidth: 250 }}
+            />
+
+            {/* Status Filter */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="paused">Paused</MenuItem>
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="archived">Archived</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Platform Filter */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Platform</InputLabel>
+              <Select
+                value={platformFilter}
+                label="Platform"
+                onChange={(e) => setPlatformFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Platforms</MenuItem>
+                <MenuItem value="Google Ads">Google Ads</MenuItem>
+                <MenuItem value="Facebook Ads">Facebook Ads</MenuItem>
+                <MenuItem value="Instagram">Instagram</MenuItem>
+                <MenuItem value="LinkedIn">LinkedIn</MenuItem>
+                <MenuItem value="Email">Email</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            {/* Bulk Actions */}
+            {selectedCampaigns.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={() => handleBulkAction('activate')}
+                  startIcon={<PlayIcon />}
+                >
+                  Activate ({selectedCampaigns.length})
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => handleBulkAction('pause')}
+                  startIcon={<PauseIcon />}
+                >
+                  Pause ({selectedCampaigns.length})
+                </Button>
+              </Box>
+            )}
+
+            {/* View Mode Toggle */}
+            <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('list')}
+                sx={{ bgcolor: viewMode === 'list' ? 'primary.main' : 'transparent', color: viewMode === 'list' ? 'white' : 'inherit' }}
+              >
+                <ListIcon />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('grid')}
+                sx={{ bgcolor: viewMode === 'grid' ? 'primary.main' : 'transparent', color: viewMode === 'grid' ? 'white' : 'inherit' }}
+              >
+                <GridIcon />
+              </IconButton>
+            </Box>
+
+            <IconButton onClick={() => window.location.reload()}>
+              <RefreshIcon />
+            </IconButton>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Campaigns List/Grid */}
+      {viewMode === 'list' ? (
+        <Card>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={selectedCampaigns.length > 0 && selectedCampaigns.length < filteredCampaigns.length}
+                      checked={filteredCampaigns.length > 0 && selectedCampaigns.length === filteredCampaigns.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCampaigns(filteredCampaigns.map(c => c.id))
+                        } else {
+                          setSelectedCampaigns([])
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>Campaign</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Platform</TableCell>
+                  <TableCell>Budget</TableCell>
+                  <TableCell>Performance</TableCell>
+                  <TableCell>ROAS</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredCampaigns.map((campaign) => (
+                  <TableRow key={campaign.id} hover>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedCampaigns.includes(campaign.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCampaigns(prev => [...prev, campaign.id])
+                          } else {
+                            setSelectedCampaigns(prev => prev.filter(id => id !== campaign.id))
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: statusColors[campaign.status] }}>
+                          <CampaignIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {campaign.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {campaign.type} • Created by {campaign.createdBy}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={campaign.status.toUpperCase()}
+                        size="small"
+                        sx={{
+                          bgcolor: statusColors[campaign.status],
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {platformIcons[campaign.platform as keyof typeof platformIcons]}
+                        <Typography variant="body2">{campaign.platform}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          {formatCurrency(campaign.budget.spent)} / {formatCurrency(campaign.budget.total)}
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={(campaign.budget.spent / campaign.budget.total) * 100}
+                          sx={{ mt: 0.5, height: 4 }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2">
+                          {formatNumber(campaign.performance.clicks)} clicks
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          CTR: {campaign.performance.ctr}%
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {getPerformanceIcon(campaign.performance.roas)}
+                        <Typography variant="body2" fontWeight="bold">
+                          {campaign.performance.roas.toFixed(1)}x
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title={campaign.status === 'active' ? 'Pause' : 'Activate'}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStatusChange(
+                              campaign.id,
+                              campaign.status === 'active' ? 'paused' : 'active'
+                            )}
+                          >
+                            {campaign.status === 'active' ? <PauseIcon /> : <PlayIcon />}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="More actions">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuClick(e, campaign.id)}
+                          >
+                            <MoreIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      ) : (
+        <Grid container spacing={3}>
+          {filteredCampaigns.map((campaign) => (
+            <Grid item xs={12} sm={6} md={4} key={campaign.id}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ bgcolor: statusColors[campaign.status], width: 32, height: 32 }}>
+                        <CampaignIcon fontSize="small" />
+                      </Avatar>
+                      <Chip
+                        label={campaign.status.toUpperCase()}
+                        size="small"
+                        sx={{
+                          bgcolor: statusColors[campaign.status],
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuClick(e, campaign.id)}
+                    >
+                      <MoreIcon />
+                    </IconButton>
+                  </Box>
+
+                  <Typography variant="h6" gutterBottom>
+                    {campaign.name}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    {platformIcons[campaign.platform as keyof typeof platformIcons]}
+                    <Typography variant="body2" color="text.secondary">
+                      {campaign.platform} • {campaign.type}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                      Budget: {formatCurrency(campaign.budget.spent)} / {formatCurrency(campaign.budget.total)}
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(campaign.budget.spent / campaign.budget.total) * 100}
+                      sx={{ height: 6, borderRadius: 3 }}
+                    />
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">
+                        Clicks
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {formatNumber(campaign.performance.clicks)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">
+                        ROAS
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {getPerformanceIcon(campaign.performance.roas)}
+                        <Typography variant="body2" fontWeight="bold">
+                          {campaign.performance.roas.toFixed(1)}x
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => handleCampaignAction('edit')}>
+          <EditIcon sx={{ mr: 1 }} />
+          Edit Campaign
+        </MenuItem>
+        <MenuItem onClick={() => handleCampaignAction('analyze')}>
+          <AnalyticsIcon sx={{ mr: 1 }} />
+          Analyze Performance
+        </MenuItem>
+        <MenuItem onClick={() => handleCampaignAction('duplicate')}>
+          <CopyIcon sx={{ mr: 1 }} />
+          Duplicate Campaign
+        </MenuItem>
+        <MenuItem onClick={() => handleCampaignAction('archive')}>
+          <ArchiveIcon sx={{ mr: 1 }} />
+          Archive Campaign
+        </MenuItem>
+        <MenuItem onClick={() => handleCampaignAction('delete')} sx={{ color: 'error.main' }}>
+          <DeleteIcon sx={{ mr: 1 }} />
+          Delete Campaign
+        </MenuItem>
+      </Menu>
+
+      {/* Empty State */}
+      {filteredCampaigns.length === 0 && (
+        <Card sx={{ textAlign: 'center', py: 8 }}>
+          <CardContent>
+            <CampaignIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              No campaigns found
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {campaigns.length === 0
+                ? "Get started by creating your first marketing campaign"
+                : "Try adjusting your filters to see more campaigns"
+              }
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => router.push('/dashboard/campaign-generator')}
+              sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+            >
+              Create Your First Campaign
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Floating Action Button for Mobile */}
+      <Fab
+        color="primary"
+        aria-label="add campaign"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: { xs: 'flex', md: 'none' },
+          bgcolor: '#f97316',
+          '&:hover': { bgcolor: '#ea580c' }
+        }}
+        onClick={() => router.push('/dashboard/campaign-generator')}
+      >
+        <AddIcon />
+      </Fab>
+    </Box>
+  )
+}

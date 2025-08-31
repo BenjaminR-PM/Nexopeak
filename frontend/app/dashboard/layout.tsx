@@ -35,6 +35,7 @@ import {
   Notifications as NotificationsIcon,
   Analytics as AnalyticsIcon,
   BugReport as BugReportIcon,
+  Campaign as CampaignIcon,
 } from '@mui/icons-material'
 import UserDropdown from './components/UserDropdown'
 
@@ -44,10 +45,11 @@ export const dynamic = 'force-dynamic'
 const getNavigation = (userRole?: string) => {
   const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChartIcon },
+    { name: 'Campaigns', href: '/dashboard/campaigns', icon: CampaignIcon },
     { name: 'Campaign Analyzer', href: '/dashboard/campaign-analyzer', icon: AnalyticsIcon },
+    { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
     { name: 'Connections', href: '/dashboard/connections', icon: LinkIcon },
     { name: 'Reports', href: '/dashboard/reports', icon: FileTextIcon },
-    { name: 'Campaign Generator', href: '/dashboard/campaign-generator', icon: SparklesIcon },
   ]
   
   // Add admin-only items

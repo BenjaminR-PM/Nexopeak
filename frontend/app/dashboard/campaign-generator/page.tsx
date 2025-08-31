@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Box,
   Card,
@@ -79,6 +80,8 @@ interface Campaign {
 const mockCampaigns: Campaign[] = []
 
 export default function CampaignGeneratorPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedTab, setSelectedTab] = useState(0)
   const [campaigns, setCampaigns] = useState(mockCampaigns)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -87,6 +90,7 @@ export default function CampaignGeneratorPage() {
   const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState([
     { id: 1, type: 'ai', message: 'Hello! I\'m your AI campaign assistant. I can help you create data-driven marketing campaigns based on your analytics and goals. What would you like to work on today?' }
@@ -105,15 +109,22 @@ export default function CampaignGeneratorPage() {
         if (prev >= 100) {
           clearInterval(interval)
           setIsGenerating(false)
-          setAlertMessage('Campaign generated successfully!')
-          setAlertSeverity('success')
-          setShowAlert(true)
-          setTimeout(() => setShowAlert(false), 3000)
+          setShowSuccessDialog(true)
           return 100
         }
         return prev + 10
       })
     }, 200)
+  }
+
+  const handleSuccessDialogClose = (action: 'view' | 'create' | 'close') => {
+    setShowSuccessDialog(false)
+    if (action === 'view') {
+      router.push('/dashboard/campaigns')
+    } else if (action === 'create') {
+      // Reset form for new campaign
+      setGenerationProgress(0)
+    }
   }
 
   const handleSendChat = () => {
@@ -745,6 +756,74 @@ export default function CampaignGeneratorPage() {
             sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
           >
             Create Campaign
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onClose={() => handleSuccessDialogClose('close')} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: '#16a34a', color: 'white' }}>
+              <SparklesIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6">Campaign Generated Successfully!</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Your marketing campaign has been created and is ready to launch.
+              </Typography>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              What would you like to do next?
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Card sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: '#f0fdf4' } }} onClick={() => handleSuccessDialogClose('view')}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Avatar sx={{ bgcolor: '#16a34a', color: 'white', mx: 'auto', mb: 1 }}>
+                      <TrendingUpIcon />
+                    </Avatar>
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      View All Campaigns
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Manage your campaigns portfolio
+                    </Typography>
+                  </Box>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Card sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: '#fff7ed' } }} onClick={() => handleSuccessDialogClose('create')}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Avatar sx={{ bgcolor: '#f97316', color: 'white', mx: 'auto', mb: 1 }}>
+                      <SparklesIcon />
+                    </Avatar>
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      Create Another
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Generate a new campaign
+                    </Typography>
+                  </Box>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleSuccessDialogClose('close')}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => handleSuccessDialogClose('view')}
+            sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+          >
+            View Campaigns Portfolio
           </Button>
         </DialogActions>
       </Dialog>
