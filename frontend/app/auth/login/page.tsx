@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, ArrowRight, Zap, Mail, Lock } from 'lucide-react'
 
 export default function LoginPage() {
@@ -12,6 +13,34 @@ export default function LoginPage() {
     email: '',
     password: ''
   })
+  const searchParams = useSearchParams()
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const error = searchParams.get('error')
+    
+    if (token) {
+      // Store the token and redirect to dashboard
+      localStorage.setItem('access_token', token)
+      // We'll need to fetch user data separately or decode the token
+      window.location.href = '/dashboard'
+    } else if (error) {
+      let errorMessage = 'Google authentication failed'
+      switch (error) {
+        case 'oauth_error':
+          errorMessage = 'Failed to connect to Google. Please try again.'
+          break
+        case 'no_email':
+          errorMessage = 'Google account must have an email address.'
+          break
+        case 'oauth_callback_error':
+          errorMessage = 'Authentication failed. Please try again.'
+          break
+      }
+      alert(errorMessage)
+    }
+  }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

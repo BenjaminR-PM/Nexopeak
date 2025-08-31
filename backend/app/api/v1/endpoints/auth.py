@@ -16,6 +16,8 @@ import os
 try:
     from google.auth.transport import requests as google_requests
     from google.oauth2 import id_token
+    from google_auth_oauthlib.flow import Flow
+    import secrets
     GOOGLE_OAUTH_AVAILABLE = True
 except ImportError:
     GOOGLE_OAUTH_AVAILABLE = False
@@ -159,6 +161,166 @@ async def create_demo_account(db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Demo account creation failed: {str(e)}"
         )
+
+@router.get("/google")
+async def google_oauth_redirect():
+    """Redirect to Google OAuth authorization URL"""
+    try:
+        # Check if Google OAuth is available
+        if not GOOGLE_OAUTH_AVAILABLE:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth dependencies not available"
+            )
+        
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        
+        if not google_client_id or not google_client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth not configured"
+            )
+        
+        # Create OAuth flow
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": google_client_id,
+                    "client_secret": google_client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"]
+                }
+            },
+            scopes=['openid', 'email', 'profile']
+        )
+        
+        # Set redirect URI
+        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"
+        
+        # Generate authorization URL
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true'
+        )
+        
+        # Store state in session (for production, use Redis or database)
+        # For now, we'll include it in the redirect
+        
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=authorization_url)
+        
+    except Exception as e:
+        logging_service.logger.error(
+            LogModule.AUTH,
+            f"Google OAuth redirect error: {str(e)}"
+        )
+        # Redirect to frontend with error
+        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+        return RedirectResponse(url=f"{frontend_url}/auth/login?error=oauth_error")
+
+@router.get("/google/callback")
+async def google_oauth_callback(code: str, state: str = None, db: Session = Depends(get_db)):
+    """Handle Google OAuth callback"""
+    try:
+        # Check if Google OAuth is available
+        if not GOOGLE_OAUTH_AVAILABLE:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth dependencies not available"
+            )
+        
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        
+        if not google_client_id or not google_client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth not configured"
+            )
+        
+        # Create OAuth flow
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": google_client_id,
+                    "client_secret": google_client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"]
+                }
+            },
+            scopes=['openid', 'email', 'profile']
+        )
+        
+        # Set redirect URI
+        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/auth/google/callback"
+        
+        # Exchange code for token
+        flow.fetch_token(code=code)
+        
+        # Get user info from Google
+        credentials = flow.credentials
+        idinfo = id_token.verify_oauth2_token(
+            credentials.id_token,
+            google_requests.Request(),
+            google_client_id
+        )
+        
+        # Extract user info
+        user_email = idinfo.get('email')
+        user_name = idinfo.get('name', 'Google User')
+        
+        if not user_email:
+            frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+            return RedirectResponse(url=f"{frontend_url}/auth/login?error=no_email")
+        
+        # Check if user exists
+        existing_user = AuthService.get_user_by_email(db, user_email)
+        
+        if existing_user:
+            # Generate token for existing user
+            access_token = AuthService.create_user_token(existing_user)
+        else:
+            # Create new user
+            # Create organization first
+            org = Organization(
+                name=f"{user_name}'s Organization",
+                domain=user_email.split('@')[1] if '@' in user_email else "gmail.com"
+            )
+            db.add(org)
+            db.commit()
+            db.refresh(org)
+            
+            # Create user
+            new_user = User(
+                email=user_email,
+                name=user_name,
+                password_hash="",  # No password for OAuth users
+                role="user",
+                is_active=True,
+                org_id=org.id
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            
+            # Generate token for new user
+            access_token = AuthService.create_user_token(new_user)
+        
+        # Redirect to frontend with token
+        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+        return RedirectResponse(url=f"{frontend_url}/auth/login?token={access_token}")
+        
+    except Exception as e:
+        logging_service.logger.error(
+            LogModule.AUTH,
+            f"Google OAuth callback error: {str(e)}"
+        )
+        # Redirect to frontend with error
+        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+        return RedirectResponse(url=f"{frontend_url}/auth/login?error=oauth_callback_error")
 
 @router.post("/google", response_model=TokenResponse)
 async def google_oauth(oauth_request: GoogleOAuthRequest, db: Session = Depends(get_db)):
