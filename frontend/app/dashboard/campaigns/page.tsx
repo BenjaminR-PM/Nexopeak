@@ -135,18 +135,25 @@ export default function CampaignsPortfolioPage() {
           return
         }
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-        const response = await fetch(`${API_URL}/api/v1/campaigns`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        try {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+          const response = await fetch(`${API_URL}/api/v1/campaigns`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
 
-        if (response.ok) {
-          const data = await response.json()
-          setCampaigns(data.campaigns || [])
-          setFilteredCampaigns(data.campaigns || [])
-        } else {
+          if (response.ok) {
+            const data = await response.json()
+            setCampaigns(data.campaigns || [])
+            setFilteredCampaigns(data.campaigns || [])
+          } else {
+            // Fallback to mock data
+            setCampaigns(mockCampaigns)
+            setFilteredCampaigns(mockCampaigns)
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch campaigns:', fetchError)
           // Fallback to mock data
           setCampaigns(mockCampaigns)
           setFilteredCampaigns(mockCampaigns)
@@ -160,6 +167,7 @@ export default function CampaignsPortfolioPage() {
       }
     }
 
+    // Call the function immediately
     loadCampaigns()
   }, [])
 
@@ -185,6 +193,18 @@ export default function CampaignsPortfolioPage() {
 
     setFilteredCampaigns(filtered)
   }, [campaigns, searchTerm, statusFilter, platformFilter])
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Campaigns Portfolio Debug:', {
+      loading,
+      campaignsCount: campaigns.length,
+      filteredCount: filteredCampaigns.length,
+      searchTerm,
+      statusFilter,
+      platformFilter
+    })
+  }, [loading, campaigns.length, filteredCampaigns.length, searchTerm, statusFilter, platformFilter])
 
   const handleStatusChange = async (campaignId: string, newStatus: Campaign['status']) => {
     try {
@@ -265,11 +285,14 @@ export default function CampaignsPortfolioPage() {
     return new Intl.NumberFormat('en-US').format(num)
   }
 
-  if (loading) {
+  if (loading && campaigns.length === 0) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom>Campaigns Portfolio</Typography>
         <LinearProgress />
+        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+          Loading campaigns...
+        </Typography>
       </Box>
     )
   }
