@@ -142,10 +142,42 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white mb-4">Nexopeak</h3>
-            <p className="mb-4">Making performance marketing obvious with data-driven insights</p>
-            <p className="text-sm">© 2024 Nexopeak. All rights reserved.</p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Company Info */}
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-bold text-white mb-4">Nexopeak</h3>
+              <p className="mb-4">Making performance marketing obvious with data-driven insights</p>
+              <p className="text-sm">© 2024 Nexopeak. All rights reserved.</p>
+            </div>
+            
+            {/* Quick Links */}
+            <div className="text-center md:text-left">
+              <h4 className="text-lg font-semibold text-white mb-4">Quick Links</h4>
+              <div className="space-y-2">
+                <Link href="/auth/signup" className="block text-gray-400 hover:text-white transition-colors">
+                  Get Started
+                </Link>
+                <Link href="/auth/login" className="block text-gray-400 hover:text-white transition-colors">
+                  Sign In
+                </Link>
+                <Link href="/admin-login" className="block text-gray-400 hover:text-white transition-colors">
+                  Admin Portal
+                </Link>
+              </div>
+            </div>
+            
+            {/* Legal */}
+            <div className="text-center md:text-left">
+              <h4 className="text-lg font-semibold text-white mb-4">Legal</h4>
+              <div className="space-y-2">
+                <Link href="/privacy-policy" className="block text-gray-400 hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms-of-service" className="block text-gray-400 hover:text-white transition-colors">
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
