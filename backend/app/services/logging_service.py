@@ -72,6 +72,17 @@ class LoggingService:
             self.logger.error(module, f"Failed - {message}", organization_id=organization_id,
                             additional_data={"property_id": property_id, "records": records_processed})
     
+    def log_ga4_integration(self, module: LogModule, message: str, **kwargs):
+        """Log GA4 integration events."""
+        self.logger.info(module, message, **kwargs)
+    
+    def log_ga4_error(self, module: LogModule, message: str, error: str = None, **kwargs):
+        """Log GA4 integration errors."""
+        if error:
+            self.logger.error(module, f"{message}: {error}", **kwargs)
+        else:
+            self.logger.error(module, message, **kwargs)
+    
     def log_search_console_sync(self, organization_id: str, site_url: str, 
                                records_processed: int, success: bool = True):
         """Log Search Console data synchronization."""

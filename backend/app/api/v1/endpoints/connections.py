@@ -145,7 +145,7 @@ async def google_analytics_auth_redirect(
             state=state
         )
         
-        logging_service.log_info(
+        logging_service.log_ga4_integration(
             module=LogModule.GA4_INTEGRATION,
             message=f"User {current_user.email} initiated Google Analytics OAuth",
             user_id=current_user.id
@@ -158,7 +158,7 @@ async def google_analytics_auth_redirect(
         }
         
     except Exception as e:
-        logging_service.log_error(
+        logging_service.log_ga4_error(
             module=LogModule.GA4_INTEGRATION,
             message=f"Failed to initiate Google Analytics OAuth for user {current_user.id}",
             error=str(e),
@@ -266,7 +266,7 @@ async def google_analytics_callback(
         
         db.commit()
         
-        logging_service.log_info(
+        logging_service.log_ga4_integration(
             module=LogModule.GA4_INTEGRATION,
             message=f"Successfully connected Google Analytics for user {user.email}",
             user_id=user.id
@@ -277,7 +277,7 @@ async def google_analytics_callback(
         return RedirectResponse(url=f"{frontend_url}/dashboard/connections?success=ga4_connected")
         
     except Exception as e:
-        logging_service.log_error(
+        logging_service.log_ga4_error(
             module=LogModule.GA4_INTEGRATION,
             message=f"Failed to complete Google Analytics OAuth callback",
             error=str(e)
