@@ -442,12 +442,12 @@ export default function UserManagementPage() {
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={editForm.is_active}
-                  onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value as boolean })}
+                  value={editForm.is_active ? 'true' : 'false'}
+                  onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'true' })}
                   label="Status"
                 >
-                  <MenuItem value={true}>Active</MenuItem>
-                  <MenuItem value={false}>Inactive</MenuItem>
+                  <MenuItem value="true">Active</MenuItem>
+                  <MenuItem value="false">Inactive</MenuItem>
                 </Select>
               </FormControl>
             </Box>
