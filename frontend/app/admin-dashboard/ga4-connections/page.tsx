@@ -146,7 +146,7 @@ export default function GA4ConnectionsAdminPage() {
     fetchGA4Connections()
   }, [searchTerm, filterStatus])
 
-  // Format data for display
+  // Format data for display - TypeScript fix applied
   const formatConnectionData = (connection: any) => ({
     id: connection.id,
     organization: connection.organization_name,
