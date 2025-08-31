@@ -30,24 +30,23 @@ export default function LoginPage() {
 
   // Initialize Google Sign-In
   useEffect(() => {
-    // Load Google Identity Services
     if (typeof window !== 'undefined' && window.google) {
       window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '123456789-abcdefghijklmnop.apps.googleusercontent.com',
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com',
         callback: handleGoogleResponse,
         auto_select: false,
         cancel_on_tap_outside: true,
       })
 
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-signin-button'),
-        { 
+      const buttonElement = document.getElementById('google-signin-button')
+      if (buttonElement) {
+        window.google.accounts.id.renderButton(buttonElement, { 
           theme: 'outline', 
           size: 'large',
           width: '100%',
           text: 'signin_with'
-        }
-      )
+        })
+      }
     }
   }, [])
 
@@ -57,7 +56,8 @@ export default function LoginPage() {
       setError('')
       
       try {
-        const result = await fetch('/api/v1/auth/google', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+        const result = await fetch(`${apiUrl}/api/v1/auth/google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,7 +98,8 @@ export default function LoginPage() {
     const accessToken = localStorage.getItem('access_token')
     if (accessToken) {
       try {
-        const response = await fetch('/api/v1/auth/me', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+        const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }
@@ -124,7 +125,8 @@ export default function LoginPage() {
     setSuccess('')
 
     try {
-      const response = await fetch('/api/v1/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -313,21 +315,21 @@ export default function LoginPage() {
         onLoad={() => {
           if (typeof window !== 'undefined' && window.google) {
             window.google.accounts.id.initialize({
-              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '123456789-abcdefghijklmnop.apps.googleusercontent.com',
+              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com',
               callback: handleGoogleResponse,
               auto_select: false,
               cancel_on_tap_outside: true,
             })
 
-            window.google.accounts.id.renderButton(
-              document.getElementById('google-signin-button'),
-              { 
+            const buttonElement = document.getElementById('google-signin-button')
+            if (buttonElement) {
+              window.google.accounts.id.renderButton(buttonElement, { 
                 theme: 'outline', 
                 size: 'large',
                 width: '100%',
                 text: 'signin_with'
-              }
-            )
+              })
+            }
           }
         }}
       />
