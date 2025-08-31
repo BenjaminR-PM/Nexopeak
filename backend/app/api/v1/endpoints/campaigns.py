@@ -9,7 +9,7 @@ from app.models.user import User
 from app.services.campaign_service import CampaignAnalyzerService
 from app.services.auth_service import AuthService
 from app.core.security import verify_token
-from app.core.logging_config import get_logging_service, LogModule
+from app.services.logging_service import get_logging_service, LogModule
 from app.schemas.campaign import (
     Campaign, CampaignCreate, CampaignUpdate, CampaignListResponse,
     CampaignQuestionnaire, StartAnalysisRequest,
