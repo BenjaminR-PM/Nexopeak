@@ -6,6 +6,7 @@ Provides comprehensive admin functionality for managing the Nexopeak platform.
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from pydantic import BaseModel
@@ -34,30 +35,37 @@ from app.schemas.admin import (
 
 
 router = APIRouter()
+security = HTTPBearer()
 logging_service = get_logging_service()
 
 
 async def get_current_admin_user(
-    db: Session = Depends(get_db),
-    token: str = Depends(verify_token)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ) -> User:
     """Dependency to get current admin user and verify admin role."""
-    auth_service = AuthService(db)
-    user = auth_service.get_user_by_id(token.get("user_id"))
-    
-    if not user:
+    try:
+        payload = verify_token(credentials.credentials)
+        user = AuthService.get_user_by_email(db, payload.get("sub"))
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        if user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
+        return user
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+            detail="Invalid authentication credentials"
         )
-    
-    if not user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    
-    return user
 
 
 def get_client_ip(request: Request) -> str:
