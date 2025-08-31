@@ -67,12 +67,12 @@ interface Connection {
   description: string
 }
 
-const availableConnections = [
+const availableConnections: Connection[] = [
   {
     id: 'ga4',
     name: 'Google Analytics 4',
     provider: 'Google',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -83,7 +83,7 @@ const availableConnections = [
     id: 'gsc',
     name: 'Google Search Console',
     provider: 'Google',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -94,7 +94,7 @@ const availableConnections = [
     id: 'gt',
     name: 'Google Trends',
     provider: 'Google',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -105,7 +105,7 @@ const availableConnections = [
     id: 'mailchimp',
     name: 'Mailchimp',
     provider: 'Intuit',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -116,7 +116,7 @@ const availableConnections = [
     id: 'hubspot',
     name: 'HubSpot CRM',
     provider: 'HubSpot',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -127,7 +127,7 @@ const availableConnections = [
     id: 'facebook',
     name: 'Facebook Ads',
     provider: 'Meta',
-    status: 'disconnected' as 'connected' | 'disconnected' | 'error' | 'pending',
+    status: 'disconnected',
     lastSync: 'Never',
     nextSync: 'Not scheduled',
     dataPoints: 0,
@@ -155,7 +155,7 @@ export default function ConnectionsPage() {
       setConnections(prev => 
         prev.map(conn => 
           conn.id === 'ga4' 
-            ? { ...conn, status: 'connected' as const, lastSync: 'Just now', nextSync: 'In 24 hours' }
+            ? { ...conn, status: 'connected', lastSync: 'Just now', nextSync: 'In 24 hours' }
             : conn
         )
       )
@@ -224,7 +224,7 @@ export default function ConnectionsPage() {
         setConnections(prev => 
           prev.map(conn => 
             conn.id === connectionId 
-              ? { ...conn, status: 'pending' as const }
+              ? { ...conn, status: 'pending' }
               : conn
           )
         )
@@ -258,7 +258,7 @@ export default function ConnectionsPage() {
         setConnections(prev => 
           prev.map(conn => 
             conn.id === connectionId 
-              ? { ...conn, status: 'disconnected' as const }
+              ? { ...conn, status: 'disconnected' }
               : conn
           )
         )
@@ -273,7 +273,7 @@ export default function ConnectionsPage() {
       setConnections(prev => 
         prev.map(conn => 
           conn.id === connectionId 
-            ? { ...conn, status: 'connected' as const, lastSync: 'Just now', nextSync: 'In 24 hours' }
+            ? { ...conn, status: 'connected', lastSync: 'Just now', nextSync: 'In 24 hours' }
             : conn
         )
       )
@@ -288,7 +288,7 @@ export default function ConnectionsPage() {
     setConnections(prev => 
       prev.map(conn => 
         conn.id === connectionId 
-          ? { ...conn, status: 'disconnected' as const, lastSync: 'Never', nextSync: 'Not scheduled' }
+          ? { ...conn, status: 'disconnected', lastSync: 'Never', nextSync: 'Not scheduled' }
           : conn
       )
     )
