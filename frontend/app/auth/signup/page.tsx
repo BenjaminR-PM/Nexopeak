@@ -380,17 +380,3 @@ export default function SignupPage() {
     </>
   )
 }
-
-// Add TypeScript declarations for Google Identity Services
-declare global {
-  interface Window {
-    google: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void
-          prompt: () => void
-        }
-      }
-    }
-  }
-}
