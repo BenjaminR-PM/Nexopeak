@@ -217,7 +217,7 @@ async def google_analytics_callback(
         )
         
         # Set redirect URI
-        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend.herokuapp.com')}/api/v1/connections/google-analytics/callback"
+        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/connections/google-analytics/callback"
         
         # Exchange code for token
         flow.fetch_token(code=code)
