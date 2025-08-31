@@ -20,11 +20,11 @@ export default function LoginPage() {
     const token = searchParams.get('token')
     const error = searchParams.get('error')
     
+    // Handle backend OAuth callback
     if (token) {
-      // Store the token and redirect to dashboard
       localStorage.setItem('access_token', token)
-      // We'll need to fetch user data separately or decode the token
       window.location.href = '/dashboard'
+      return
     } else if (error) {
       let errorMessage = 'Google authentication failed'
       switch (error) {
@@ -39,7 +39,55 @@ export default function LoginPage() {
           break
       }
       alert(errorMessage)
+      return
     }
+    
+    // Handle Google OAuth ID token from URL fragment
+    const handleGoogleCallback = async () => {
+      const hash = window.location.hash.substring(1)
+      const params = new URLSearchParams(hash)
+      const idToken = params.get('id_token')
+      const storedNonce = localStorage.getItem('google_oauth_nonce')
+      
+      if (idToken && storedNonce) {
+        try {
+          // Send ID token to backend for verification and user creation
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'}/api/v1/auth/google`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id_token: idToken,
+              nonce: storedNonce
+            }),
+          })
+          
+          if (!response.ok) {
+            throw new Error('Google authentication failed')
+          }
+          
+          const loginData = await response.json()
+          
+          // Store authentication data
+          localStorage.setItem('access_token', loginData.access_token)
+          localStorage.setItem('user_data', JSON.stringify(loginData.user))
+          localStorage.removeItem('google_oauth_nonce')
+          
+          // Redirect to dashboard
+          window.location.href = '/dashboard'
+          
+        } catch (error) {
+          console.error('Google OAuth error:', error)
+          alert('Google authentication failed. Please try again.')
+          localStorage.removeItem('google_oauth_nonce')
+          // Clear URL hash
+          window.location.hash = ''
+        }
+      }
+    }
+    
+    handleGoogleCallback()
   }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,9 +138,24 @@ export default function LoginPage() {
     setIsGoogleLoading(true)
     
     try {
-      // Redirect to Google OAuth endpoint
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-      window.location.href = `${apiUrl}/api/v1/auth/google`
+      // Use Google's direct OAuth URL with frontend redirect (works with existing credentials)
+      const googleClientId = '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com'
+      const redirectUri = `${window.location.origin}/auth/login` // Frontend callback
+      const scope = 'openid email profile'
+      const responseType = 'id_token'
+      const nonce = Math.random().toString(36).substring(2, 15)
+      
+      // Store nonce for verification
+      localStorage.setItem('google_oauth_nonce', nonce)
+      
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${googleClientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_type=${responseType}&` +
+        `nonce=${nonce}`
+      
+      window.location.href = googleAuthUrl
       
     } catch (error: any) {
       alert(error.message || 'Google login failed. Please try again.')
