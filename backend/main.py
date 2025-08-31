@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import engine, Base, get_db, create_tables
-from app.core.logging_config import setup_request_logging, LogModule
+from app.services.logging_service import setup_request_logging, LogModule
 from app.services.logging_service import get_logging_service
 from app.api.v1.api import api_router
 from app.core.security import verify_token
