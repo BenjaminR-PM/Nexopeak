@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Box,
   Card,
@@ -142,6 +143,39 @@ export default function ConnectionsPage() {
   const [alertMessage, setAlertMessage] = useState('')
   const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success')
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null)
+  const searchParams = useSearchParams()
+
+  // Handle OAuth callback results
+  useEffect(() => {
+    const success = searchParams.get('success')
+    const error = searchParams.get('error')
+    
+    if (success === 'ga4_connected') {
+      // Update GA4 connection status
+      setConnections(prev => 
+        prev.map(conn => 
+          conn.id === 'ga4' 
+            ? { ...conn, status: 'connected' as const, lastSync: 'Just now', nextSync: 'In 24 hours' }
+            : conn
+        )
+      )
+      setAlertMessage('Google Analytics connected successfully!')
+      setAlertSeverity('success')
+      setShowAlert(true)
+      setTimeout(() => setShowAlert(false), 5000)
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (error === 'ga4_connection_failed') {
+      setAlertMessage('Failed to connect Google Analytics. Please try again.')
+      setAlertSeverity('error')
+      setShowAlert(true)
+      setTimeout(() => setShowAlert(false), 5000)
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [searchParams])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -173,18 +207,42 @@ export default function ConnectionsPage() {
     }
   }
 
-  const handleConnect = (connectionId: string) => {
-    setConnections(prev => 
-      prev.map(conn => 
-        conn.id === connectionId 
-          ? { ...conn, status: 'connected' as const, lastSync: 'Just now', nextSync: 'In 24 hours' }
-          : conn
+  const handleConnect = async (connectionId: string) => {
+    if (connectionId === 'ga4') {
+      // Redirect to Google Analytics OAuth
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        setAlertMessage('Please log in to connect Google Analytics')
+        setAlertSeverity('error')
+        setShowAlert(true)
+        setTimeout(() => setShowAlert(false), 3000)
+        return
+      }
+      
+      try {
+        // Redirect to backend Google Analytics OAuth endpoint
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+        window.location.href = `${apiUrl}/api/v1/connections/google-analytics/auth`
+      } catch (error) {
+        setAlertMessage('Failed to initiate Google Analytics connection')
+        setAlertSeverity('error')
+        setShowAlert(true)
+        setTimeout(() => setShowAlert(false), 3000)
+      }
+    } else {
+      // Mock connection for other providers
+      setConnections(prev => 
+        prev.map(conn => 
+          conn.id === connectionId 
+            ? { ...conn, status: 'connected' as const, lastSync: 'Just now', nextSync: 'In 24 hours' }
+            : conn
+        )
       )
-    )
-    setAlertMessage('Connection established successfully!')
-    setAlertSeverity('success')
-    setShowAlert(true)
-    setTimeout(() => setShowAlert(false), 3000)
+      setAlertMessage('Connection established successfully!')
+      setAlertSeverity('success')
+      setShowAlert(true)
+      setTimeout(() => setShowAlert(false), 3000)
+    }
   }
 
   const handleDisconnect = (connectionId: string) => {
