@@ -74,68 +74,7 @@ interface Report {
   icon: React.ReactNode
 }
 
-const mockReports: Report[] = [
-  {
-    id: '1',
-    name: 'Weekly Performance Report',
-    type: 'performance',
-    status: 'completed',
-    createdAt: '2024-01-15',
-    lastUpdated: '2024-01-15',
-    size: '2.4 MB',
-    format: 'pdf',
-    description: 'Comprehensive weekly performance analysis including traffic, conversions, and engagement metrics',
-    icon: <BarChartIcon sx={{ color: '#3b82f6' }} />
-  },
-  {
-    id: '2',
-    name: 'SEO Ranking Report',
-    type: 'seo',
-    status: 'completed',
-    createdAt: '2024-01-14',
-    lastUpdated: '2024-01-14',
-    size: '1.8 MB',
-    format: 'excel',
-    description: 'Keyword rankings, organic traffic analysis, and competitor insights',
-    icon: <TrendingUpIcon sx={{ color: '#10b981' }} />
-  },
-  {
-    id: '3',
-    name: 'Campaign ROI Analysis',
-    type: 'campaign',
-    status: 'processing',
-    createdAt: '2024-01-15',
-    lastUpdated: '2024-01-15',
-    size: '0 MB',
-    format: 'pdf',
-    description: 'Return on investment analysis for all active marketing campaigns',
-    icon: <PieChartIcon sx={{ color: '#f59e0b' }} />
-  },
-  {
-    id: '4',
-    name: 'Monthly Analytics Summary',
-    type: 'analytics',
-    status: 'scheduled',
-    createdAt: '2024-01-01',
-    lastUpdated: '2024-01-01',
-    size: '0 MB',
-    format: 'pdf',
-    description: 'Monthly overview of website performance and user behavior',
-    icon: <TimelineIcon sx={{ color: '#8b5cf6' }} />
-  },
-  {
-    id: '5',
-    name: 'Q4 Performance Review',
-    type: 'performance',
-    status: 'completed',
-    createdAt: '2024-01-10',
-    lastUpdated: '2024-01-10',
-    size: '5.2 MB',
-    format: 'pdf',
-    description: 'Quarterly performance review with year-over-year comparisons',
-    icon: <BarChartIcon sx={{ color: '#ef4444' }} />
-  }
-]
+const mockReports: Report[] = []
 
 export default function ReportsPage() {
   const [reports, setReports] = useState(mockReports)

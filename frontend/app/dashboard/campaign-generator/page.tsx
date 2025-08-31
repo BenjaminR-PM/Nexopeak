@@ -76,40 +76,7 @@ interface Campaign {
   }
 }
 
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    name: 'Summer Sale Campaign',
-    type: 'social',
-    status: 'active',
-    budget: 5000,
-    targetAudience: 'Young professionals, 25-35',
-    startDate: '2024-06-01',
-    endDate: '2024-08-31',
-    performance: {
-      impressions: 125000,
-      clicks: 8500,
-      conversions: 425,
-      spend: 3200
-    }
-  },
-  {
-    id: '2',
-    name: 'Product Launch Email',
-    type: 'email',
-    status: 'draft',
-    budget: 2000,
-    targetAudience: 'Existing customers',
-    startDate: '2024-07-01',
-    endDate: '2024-07-31',
-    performance: {
-      impressions: 0,
-      clicks: 0,
-      conversions: 0,
-      spend: 0
-    }
-  }
-]
+const mockCampaigns: Campaign[] = []
 
 export default function CampaignGeneratorPage() {
   const [selectedTab, setSelectedTab] = useState(0)
@@ -122,9 +89,7 @@ export default function CampaignGeneratorPage() {
   const [generationProgress, setGenerationProgress] = useState(0)
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState([
-    { id: 1, type: 'ai', message: 'Hello! I\'m your AI campaign assistant. I can help you create data-driven marketing campaigns based on your analytics and goals. What would you like to work on today?' },
-    { id: 2, type: 'user', message: 'I want to increase my website conversions' },
-    { id: 3, type: 'ai', message: 'Great goal! I can see from your analytics that your current conversion rate is 2.1%. Let me analyze your data and suggest some campaign strategies.' }
+    { id: 1, type: 'ai', message: 'Hello! I\'m your AI campaign assistant. I can help you create data-driven marketing campaigns based on your analytics and goals. What would you like to work on today?' }
   ])
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
