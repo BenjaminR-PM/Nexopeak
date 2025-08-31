@@ -120,7 +120,7 @@ async def google_analytics_auth_redirect(
                     "client_secret": google_client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/connections/google-analytics/callback"]
+                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend.herokuapp.com')}/api/v1/connections/google-analytics/callback"]
                 }
             },
             scopes=[
@@ -204,7 +204,7 @@ async def google_analytics_callback(
                     "client_secret": google_client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/connections/google-analytics/callback"]
+                    "redirect_uris": [f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend.herokuapp.com')}/api/v1/connections/google-analytics/callback"]
                 }
             },
             scopes=[
@@ -217,7 +217,7 @@ async def google_analytics_callback(
         )
         
         # Set redirect URI
-        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend-54c8631fe608.herokuapp.com')}/api/v1/connections/google-analytics/callback"
+        flow.redirect_uri = f"{os.getenv('BACKEND_URL', 'https://nexopeak-backend.herokuapp.com')}/api/v1/connections/google-analytics/callback"
         
         # Exchange code for token
         flow.fetch_token(code=code)
@@ -273,7 +273,7 @@ async def google_analytics_callback(
         )
         
         # Redirect to frontend with success
-        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend.herokuapp.com')
         return RedirectResponse(url=f"{frontend_url}/dashboard/connections?success=ga4_connected")
         
     except Exception as e:
@@ -284,7 +284,7 @@ async def google_analytics_callback(
         )
         
         # Redirect to frontend with error
-        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend-d38117672e4d.herokuapp.com')
+        frontend_url = os.getenv('FRONTEND_URL', 'https://nexopeak-frontend.herokuapp.com')
         return RedirectResponse(url=f"{frontend_url}/dashboard/connections?error=ga4_connection_failed")
 
 @router.delete("/connections/{connection_id}")
