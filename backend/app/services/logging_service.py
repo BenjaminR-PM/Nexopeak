@@ -7,7 +7,7 @@ import functools
 from typing import Any, Callable, Dict, Optional
 from contextlib import contextmanager
 
-from app.core.logging_config import LogModule, LogLevel
+from app.core.logging_config import LogModule, LogLevel, get_logger
 
 
 class LoggingService:
