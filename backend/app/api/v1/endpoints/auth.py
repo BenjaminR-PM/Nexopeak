@@ -71,6 +71,7 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
         )
 
 @router.post("/signup", response_model=TokenResponse)
+@router.post("/register", response_model=TokenResponse)
 async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
     """User registration."""
     try:
