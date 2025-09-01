@@ -147,7 +147,7 @@ export function withTextEmphasis<P extends { children?: React.ReactNode }>(
     
     if (typeof children === 'string') {
       return (
-        <Component ref={ref} {...(rest as P)}>
+        <Component ref={ref} {...(rest as any)}>
           <EmphasizedText 
             text={children} 
             emphasisOptions={{ ...defaultOptions, ...emphasisOptions }}
