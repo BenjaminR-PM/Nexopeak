@@ -157,7 +157,7 @@ export function withTextEmphasis<P extends { children?: React.ReactNode }>(
       );
     }
     
-    return <Component ref={ref} {...(rest as P)}>{children}</Component>;
+    return <Component ref={ref} {...(rest as any)}>{children}</Component>;
   });
 }
 
