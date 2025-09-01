@@ -5,7 +5,7 @@ from app.core.database import Base
 
 # Constants
 DATA_WAREHOUSES_TABLE = "data_warehouses"
-ORGANIZATIONS_TABLE = "organizations"
+ORGANIZATIONS_TABLE = "orgs"
 
 class DataWarehouse(Base):
     __tablename__ = "data_warehouses"
