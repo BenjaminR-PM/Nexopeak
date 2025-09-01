@@ -26,29 +26,34 @@ export default function LoginPage() {
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false)
   const router = useRouter()
 
-  // Initialize Google Sign-In
+  // Initialize Google Sign-In after script loads
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.google) {
-      window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com',
-        callback: handleGoogleResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      })
-
-      const buttonElement = document.getElementById('google-signin-button')
-      if (buttonElement) {
-        window.google.accounts.id.renderButton(buttonElement, { 
-          theme: 'outline', 
-          size: 'large',
-          width: '100%',
-          text: 'signin_with'
+    if (googleScriptLoaded && typeof window !== 'undefined' && window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com',
+          callback: handleGoogleResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
         })
+
+        const buttonElement = document.getElementById('google-signin-button')
+        if (buttonElement) {
+          window.google.accounts.id.renderButton(buttonElement, { 
+            theme: 'outline', 
+            size: 'large',
+            width: '100%',
+            text: 'signin_with'
+          })
+        }
+      } catch (error) {
+        console.error('Failed to initialize Google Sign-In:', error)
       }
     }
-  }, [])
+  }, [googleScriptLoaded])
 
   const handleGoogleResponse = async (response: any) => {
     if (response.credential) {
@@ -168,6 +173,8 @@ export default function LoginPage() {
         <Script 
           src="https://accounts.google.com/gsi/client" 
           strategy="beforeInteractive"
+          onLoad={() => setGoogleScriptLoaded(true)}
+          onError={() => console.error('Failed to load Google Sign-In script')}
         />
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -189,6 +196,12 @@ export default function LoginPage() {
               {/* Google OAuth Button */}
               <div className="space-y-4">
                 <div id="google-signin-button"></div>
+                {!googleScriptLoaded && (
+                  <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
+                    <Loader2 className="w-5 h-5 text-gray-500 mr-2 animate-spin" />
+                    <span className="text-sm text-gray-600">Loading Google Sign-In...</span>
+                  </div>
+                )}
                 {isOAuthLoading && (
                   <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
                     <Loader2 className="w-5 h-5 text-gray-500 mr-2 animate-spin" />
