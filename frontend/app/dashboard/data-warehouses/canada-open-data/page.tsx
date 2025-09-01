@@ -67,7 +67,7 @@ export default function CanadaOpenDataDashboard() {
       setError(null)
       
       const data = await fetchAllCanadaOpenData()
-      const datasets = getAvailableDatasets()
+      const datasets = await getAvailableDatasets()
       
       setInternetUsageByAge(data.internetUsageByAge)
       setStreamingServicesByIncome(data.streamingServicesByIncome)

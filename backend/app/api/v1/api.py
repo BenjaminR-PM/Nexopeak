@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, organizations, connections, insights, analytics, etl, campaigns, logs, admin, data_warehouses
+from app.api.v1.endpoints import auth, users, organizations, connections, insights, analytics, etl, campaigns, logs, admin, data_warehouses, canada_open_data
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(campaigns.router, prefix="/campaigns", tags=["campaign
 api_router.include_router(logs.router, prefix="/logs", tags=["logging"])
 api_router.include_router(admin.router, prefix="/admin", tags=["administration"])
 api_router.include_router(data_warehouses.router, prefix="/data-warehouses", tags=["data-warehouses"])
+api_router.include_router(canada_open_data.router, prefix="/canada-open-data", tags=["canada-open-data"])

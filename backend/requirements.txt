@@ -26,3 +26,4 @@ sendgrid==6.10.0
 slack-sdk==3.26.1
 psutil==5.9.6
 PyJWT==2.8.0
+httpx==0.25.2
