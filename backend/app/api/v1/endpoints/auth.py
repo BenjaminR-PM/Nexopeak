@@ -14,6 +14,7 @@ from app.schemas.auth import (
 from app.models.user import User
 from app.services.logging_service import get_logging_service, LogModule
 import logging
+import os
 
 router = APIRouter()
 security = HTTPBearer()
@@ -227,19 +228,48 @@ async def extend_session(credentials: HTTPAuthorizationCredentials = Depends(sec
             detail="Internal server error"
         )
 
-@router.post("/google/verify-id-token", response_model=TokenResponse)
-async def verify_google_id_token(
+@router.post("/google", response_model=TokenResponse)
+async def google_oauth_login(
     google_request: GoogleIdTokenRequest, 
     db: Session = Depends(get_db)
 ):
-    """Verify Google ID token and create user session."""
+    """Google OAuth login endpoint."""
     try:
-        # Verify Google ID token (simplified for demo)
-        # In production, you should verify with Google's servers
+        # Verify Google ID token with Google's servers
+        id_token = google_request.id_token
         
-        # Extract email from ID token (this is a simplified approach)
-        # In real implementation, verify the token with Google
-        email = google_request.id_token.split(".")[0]  # Simplified extraction
+        # In production, you should verify the ID token with Google's servers
+        # For now, we'll decode the JWT to extract user information
+        # This is NOT secure for production - you must verify with Google
+        
+        try:
+            from google.auth.transport import requests
+            from google.oauth2 import id_token
+            
+            # Verify the token with Google (secure method)
+            idinfo = id_token.verify_oauth2_token(
+                google_request.id_token, 
+                requests.Request(), 
+                os.getenv('GOOGLE_CLIENT_ID', '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com')
+            )
+            
+            # Extract user information from verified token
+            email = idinfo['email']
+            name = idinfo.get('name', email.split('@')[0])
+            google_id = idinfo['sub']
+            
+        except Exception as verify_error:
+            logger.error(f"Google ID token verification failed: {verify_error}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Google ID token"
+            )
+        
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email not found in Google ID token"
+            )
         
         # Find or create user
         user = db.query(User).filter(User.email == email).first()
@@ -248,12 +278,22 @@ async def verify_google_id_token(
             # Create new user from Google data
             user = User(
                 email=email,
-                name=email.split("@")[0],  # Use email prefix as name
-                hashed_password="google_oauth_user"  # Placeholder
+                name=name,
+                hashed_password="google_oauth_user",  # Placeholder for OAuth users
+                is_active=True,
+                # You might want to store google_id in a separate field
             )
             db.add(user)
             db.commit()
             db.refresh(user)
+            
+            # Log new user creation
+            logging_service = get_logging_service()
+            logging_service.log_ga4_integration(
+                module=LogModule.AUTHENTICATION,
+                message=f"New user {email} created via Google OAuth",
+                user_id=user.id
+            )
         
         # Create tokens
         access_token = create_access_token(
@@ -279,9 +319,17 @@ async def verify_google_id_token(
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=expires_in,
-            remember_me=google_request.remember_me
+            remember_me=google_request.remember_me,
+            user=UserResponse(
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                is_active=user.is_active
+            )
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Google OAuth error: {e}")
         raise HTTPException(

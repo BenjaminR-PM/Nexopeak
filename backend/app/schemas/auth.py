@@ -24,8 +24,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     name: str
-    role: str
-    org_id: UUID
+    is_active: bool = True
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -33,6 +32,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     remember_me: bool = False
+    user: Optional[UserResponse] = None
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
