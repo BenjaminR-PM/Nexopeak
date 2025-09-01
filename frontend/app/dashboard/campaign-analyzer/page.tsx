@@ -44,6 +44,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Campaign as CampaignIcon,
 } from '@mui/icons-material'
+import { CampaignText, InsightText } from '../../../components/EmphasizedText'
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -741,11 +742,11 @@ export default function CampaignAnalyzerPage() {
                           severity={gap.type === 'opportunity' ? 'success' : 'warning'}
                           sx={{ mb: 2 }}
                         >
-                          <Typography variant="subtitle2">{gap.description}</Typography>
-                          <Typography variant="body2">
-                            Current: {gap.current_value} → Predicted: {gap.predicted_value} 
-                            ({gap.gap_percentage > 0 ? '+' : ''}{gap.gap_percentage}% change)
-                          </Typography>
+                          <CampaignText text={gap.description} variant="subtitle2" />
+                          <CampaignText 
+                            text={`Current: ${gap.current_value} → Predicted: ${gap.predicted_value} (${gap.gap_percentage > 0 ? '+' : ''}${gap.gap_percentage}% change)`}
+                            variant="body2"
+                          />
                         </Alert>
                       ))}
                     </CardContent>
@@ -772,8 +773,8 @@ export default function CampaignAnalyzerPage() {
                                   <LightbulbIcon color="warning" />
                                 </ListItemIcon>
                                 <ListItemText
-                                  primary={rec.action}
-                                  secondary={`${rec.category} • ${rec.expected_impact} • ${rec.timeline}`}
+                                  primary={<CampaignText text={rec.action} component="span" />}
+                                  secondary={<InsightText text={`${rec.category} • ${rec.expected_impact} • ${rec.timeline}`} component="span" />}
                                 />
                               </ListItem>
                             ))}
@@ -796,8 +797,8 @@ export default function CampaignAnalyzerPage() {
                                   <TrendingUpIcon color="success" />
                                 </ListItemIcon>
                                 <ListItemText
-                                  primary={rec.action}
-                                  secondary={`${rec.category} • ${rec.expected_impact} • ${rec.timeline}`}
+                                  primary={<CampaignText text={rec.action} component="span" />}
+                                  secondary={<InsightText text={`${rec.category} • ${rec.expected_impact} • ${rec.timeline}`} component="span" />}
                                 />
                               </ListItem>
                             ))}

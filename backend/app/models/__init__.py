@@ -7,6 +7,7 @@ from .connection import Connection
 from .campaign import Campaign, CampaignAnalysis
 from .subscription import SubscriptionPlan, Subscription, Invoice
 from .platform_settings import PlatformSettings, SystemMetrics, AuditLog
+from .data_warehouse import DataWarehouse, DataWarehouseConnection, Dataset, DataWarehouseMetrics
 
 __all__ = [
     "User",
@@ -19,5 +20,9 @@ __all__ = [
     "Invoice",
     "PlatformSettings",
     "SystemMetrics",
-    "AuditLog"
+    "AuditLog",
+    "DataWarehouse",
+    "DataWarehouseConnection", 
+    "Dataset",
+    "DataWarehouseMetrics"
 ]
