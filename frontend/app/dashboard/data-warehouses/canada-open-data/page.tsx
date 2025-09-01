@@ -15,7 +15,6 @@ import {
   Loader2,
   ExternalLink,
   Activity,
-  Home,
   ShoppingCart
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, Pie } from 'recharts'
@@ -61,12 +60,19 @@ export default function CanadaOpenDataDashboard() {
     loadData()
   }, [])
 
+  // Reload data when timeframe changes
+  useEffect(() => {
+    if (selectedTimeframe) {
+      loadData()
+    }
+  }, [selectedTimeframe])
+
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const data = await fetchAllCanadaOpenData()
+      const data = await fetchAllCanadaOpenData(selectedTimeframe)
       const datasets = await getAvailableDatasets()
       
       setInternetUsageByAge(data.internetUsageByAge)
@@ -370,8 +376,8 @@ export default function CanadaOpenDataDashboard() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {connectionTypes.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {connectionTypes.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip />

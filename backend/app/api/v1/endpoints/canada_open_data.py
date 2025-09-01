@@ -75,6 +75,7 @@ async def fetch_statcan_data(vector_ids: List[int], periods: int = 12) -> List[D
 
 @router.get("/internet-usage-by-age")
 async def get_internet_usage_by_age(
+    periods: int = 6,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -89,7 +90,7 @@ async def get_internet_usage_by_age(
             STATCAN_VECTORS["internetUsage65plus"]
         ]
         
-        data = await fetch_statcan_data(vector_ids, 6)
+        data = await fetch_statcan_data(vector_ids, periods)
         age_groups = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
         
         result = []
@@ -220,6 +221,7 @@ async def get_connection_types(
 
 @router.get("/monthly-trends")
 async def get_monthly_trends(
+    periods: int = 6,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -231,8 +233,15 @@ async def get_monthly_trends(
             STATCAN_VECTORS["onlineShopping"]
         ]
         
-        data = await fetch_statcan_data(vector_ids, 6)
-        months = ['Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024']
+        data = await fetch_statcan_data(vector_ids, periods)
+        
+        # Generate month labels based on periods
+        from datetime import datetime, timedelta
+        current_date = datetime.now()
+        months = []
+        for i in range(periods):
+            month_date = current_date - timedelta(days=30 * (periods - 1 - i))
+            months.append(month_date.strftime('%b %Y'))
         
         result = []
         for i, month in enumerate(months):
@@ -276,17 +285,18 @@ async def get_monthly_trends(
 
 @router.get("/all-data")
 async def get_all_canada_open_data(
+    periods: int = 6,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get all Canada Open Data in one request"""
     try:
         # Fetch all data concurrently
-        internet_usage = await get_internet_usage_by_age(current_user, db)
+        internet_usage = await get_internet_usage_by_age(periods, current_user, db)
         streaming_services = await get_streaming_services_by_income(current_user, db)
         digital_adoption = await get_digital_adoption_by_province(current_user, db)
         connection_types = await get_connection_types(current_user, db)
-        monthly_trends = await get_monthly_trends(current_user, db)
+        monthly_trends = await get_monthly_trends(periods, current_user, db)
         
         return {
             "internetUsageByAge": internet_usage,
