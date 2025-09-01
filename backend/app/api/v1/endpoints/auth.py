@@ -58,7 +58,13 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=expires_in,
-            remember_me=user_credentials.remember_me
+            remember_me=user_credentials.remember_me,
+            user=UserResponse(
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                is_active=user.is_active
+            )
         )
         
     except HTTPException:
@@ -138,7 +144,13 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=expires_in,
-            remember_me=user_data.remember_me
+            remember_me=user_data.remember_me,
+            user=UserResponse(
+                id=new_user.id,
+                email=new_user.email,
+                name=new_user.name,
+                is_active=new_user.is_active
+            )
         )
         
     except HTTPException:
