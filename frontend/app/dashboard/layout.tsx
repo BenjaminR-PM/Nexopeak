@@ -55,10 +55,14 @@ export default function DashboardLayout({
 
         if (response.ok) {
           const data = await response.json()
-          setCampaigns(data)
+          setCampaigns(Array.isArray(data) ? data : [])
+        } else {
+          console.error('Failed to fetch campaigns:', response.status)
+          setCampaigns([])
         }
       } catch (error) {
         console.error('Failed to fetch campaigns:', error)
+        setCampaigns([])
       } finally {
         setCampaignsLoading(false)
       }
@@ -114,11 +118,13 @@ export default function DashboardLayout({
                   <option value="" disabled>
                     {campaignsLoading ? 'Loading campaigns...' : 'Select Campaign'}
                   </option>
-                  {campaigns.map((campaign) => (
+                  {campaigns && campaigns.length > 0 ? campaigns.map((campaign) => (
                     <option key={campaign.id} value={campaign.id}>
                       {campaign.name}
                     </option>
-                  ))}
+                  )) : !campaignsLoading && (
+                    <option value="" disabled>No campaigns found</option>
+                  )}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <BarChart3 className="h-4 w-4 text-gray-400" />
