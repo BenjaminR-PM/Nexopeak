@@ -17,19 +17,7 @@ import {
 import { RequireNoAuth } from '@/components/ProtectedRoute'
 import Script from 'next/script'
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void
-          renderButton: (element: HTMLElement, config: any) => void
-          prompt: () => void
-        }
-      }
-    }
-  }
-}
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
