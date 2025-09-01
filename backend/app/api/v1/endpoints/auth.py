@@ -64,7 +64,10 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Login error: {e}")
+        logger.error(f"Login error: {str(e)}")
+        logger.error(f"Login error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Login traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
@@ -141,7 +144,10 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Signup error: {e}")
+        logger.error(f"Signup error: {str(e)}")
+        logger.error(f"Signup error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Signup traceback: {traceback.format_exc()}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
