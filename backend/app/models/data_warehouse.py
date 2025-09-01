@@ -32,7 +32,7 @@ class DataWarehouseConnection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     warehouse_id = Column(Integer, ForeignKey(f"{DATA_WAREHOUSES_TABLE}.id"), nullable=False)
-    organization_id = Column(Integer, ForeignKey(f"{ORGANIZATIONS_TABLE}.id"), nullable=False)
+    organization_id = Column(String(36), ForeignKey(f"{ORGANIZATIONS_TABLE}.id"), nullable=False)
     connection_name = Column(String(255), nullable=False)
     api_key = Column(String(500))  # Encrypted API key if needed
     api_secret = Column(String(500))  # Encrypted API secret if needed
@@ -74,7 +74,7 @@ class DataWarehouseMetrics(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     warehouse_id = Column(Integer, ForeignKey(f"{DATA_WAREHOUSES_TABLE}.id"), nullable=False)
-    organization_id = Column(Integer, ForeignKey(f"{ORGANIZATIONS_TABLE}.id"), nullable=False)
+    organization_id = Column(String(36), ForeignKey(f"{ORGANIZATIONS_TABLE}.id"), nullable=False)
     metric_name = Column(String(255), nullable=False)
     metric_value = Column(String(255))
     metric_data = Column(JSON)  # Detailed metric data
