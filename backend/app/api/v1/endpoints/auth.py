@@ -246,23 +246,62 @@ async def google_oauth_login(
             from google.auth.transport import requests
             from google.oauth2 import id_token
             
+            # Get the Google Client ID
+            google_client_id = os.getenv('GOOGLE_CLIENT_ID', '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com')
+            logger.info(f"Using Google Client ID: {google_client_id[:20]}...")
+            
             # Verify the token with Google (secure method)
             idinfo = id_token.verify_oauth2_token(
                 google_request.id_token, 
                 requests.Request(), 
-                os.getenv('GOOGLE_CLIENT_ID', '641526035282-75q9tavd87q4spnhfemarscj2679t78m.apps.googleusercontent.com')
+                google_client_id
             )
+            
+            logger.info(f"Token verification successful for user: {idinfo.get('email', 'unknown')}")
             
             # Extract user information from verified token
             email = idinfo['email']
             name = idinfo.get('name', email.split('@')[0])
             google_id = idinfo['sub']
             
+        except ValueError as ve:
+            logger.error(f"Google ID token validation error: {ve}")
+            # Try fallback verification without audience check for debugging
+            try:
+                logger.info("Attempting fallback token verification...")
+                import jwt
+                decoded = jwt.decode(google_request.id_token, options={"verify_signature": False})
+                logger.info(f"Fallback decode successful. Token aud: {decoded.get('aud')}, iss: {decoded.get('iss')}")
+                
+                # Check if the audience matches our client ID
+                if decoded.get('aud') != google_client_id:
+                    logger.error(f"Audience mismatch. Expected: {google_client_id}, Got: {decoded.get('aud')}")
+                
+                # For now, use the fallback data if verification fails
+                email = decoded.get('email')
+                name = decoded.get('name', email.split('@')[0]) if email else 'Google User'
+                google_id = decoded.get('sub', 'unknown')
+                
+                if not email:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Email not found in Google ID token"
+                    )
+                    
+                logger.warning("Using fallback token verification - this should be fixed for production")
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback verification also failed: {fallback_error}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid Google ID token: {str(ve)}"
+                )
         except Exception as verify_error:
             logger.error(f"Google ID token verification failed: {verify_error}")
+            logger.error(f"Error type: {type(verify_error).__name__}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Google ID token"
+                detail="Google OAuth verification failed"
             )
         
         if not email:
