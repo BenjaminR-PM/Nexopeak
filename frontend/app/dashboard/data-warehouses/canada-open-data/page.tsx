@@ -44,7 +44,7 @@ export default function CanadaOpenDataDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDataset, setSelectedDataset] = useState('all')
-  const [selectedTimeframe, setSelectedTimeframe] = useState('6months')
+  const [selectedTimeframe, setSelectedTimeframe] = useState('3months')
   const [lastUpdated, setLastUpdated] = useState<string>('')
   
   // Real data state
@@ -216,6 +216,8 @@ export default function CanadaOpenDataDashboard() {
               onChange={(e) => setSelectedTimeframe(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
+              <option value="1month">Last Month</option>
+              <option value="3months">Last 3 Months</option>
               <option value="6months">Last 6 Months</option>
               <option value="1year">Last Year</option>
               <option value="2years">Last 2 Years</option>
@@ -330,10 +332,10 @@ export default function CanadaOpenDataDashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="netflix" fill="#E50914" name="Netflix" />
-              <Bar dataKey="youtube" fill="#FF0000" name="YouTube" />
-              <Bar dataKey="amazonPrime" fill="#00A8E1" name="Amazon Prime" />
-              <Bar dataKey="disney" fill="#113CCF" name="Disney+" />
+              <Bar dataKey="streaming" fill="#E50914" name="Streaming Services" />
+              <Bar dataKey="onlineShopping" fill="#FF9500" name="Online Shopping" />
+              <Bar dataKey="onlineBanking" fill="#00A8E1" name="Online Banking" />
+              <Bar dataKey="socialMedia" fill="#1DA1F2" name="Social Media" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -402,6 +404,7 @@ export default function CanadaOpenDataDashboard() {
             <Line type="monotone" dataKey="internetUsers" stroke="#3B82F6" name="Internet Users (M)" />
             <Line type="monotone" dataKey="streamingUsers" stroke="#10B981" name="Streaming Users (M)" />
             <Line type="monotone" dataKey="onlineShoppers" stroke="#F59E0B" name="Online Shoppers (M)" />
+            <Line type="monotone" dataKey="onlineBanking" stroke="#8B5CF6" name="Online Banking (M)" />
           </LineChart>
         </ResponsiveContainer>
       </div>
