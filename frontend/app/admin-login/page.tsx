@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
 
         // Store token and user data
         localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('user_data', JSON.stringify(data.user))
+        localStorage.setItem('user', JSON.stringify(data.user))
         
         // Redirect to admin dashboard
         router.push('/admin-dashboard')
@@ -108,7 +108,7 @@ export default function AdminLoginPage() {
 
       if (response.ok) {
         localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('user_data', JSON.stringify(data.user))
+        localStorage.setItem('user', JSON.stringify(data.user))
         router.push('/admin-dashboard')
       } else {
         setError('Demo admin login failed. Please try manual login.')

@@ -55,7 +55,7 @@ export default function DashboardPage() {
     setIsLoading(true)
     try {
       // Get user data from localStorage for now
-      const userDataStr = localStorage.getItem('user_data')
+      const userDataStr = localStorage.getItem('user')
       if (userDataStr) {
         setUserData(JSON.parse(userDataStr))
       }

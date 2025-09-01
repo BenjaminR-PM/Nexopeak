@@ -35,7 +35,7 @@ export default function UserDropdown({
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = localStorage.getItem('user_data')
+    const userData = localStorage.getItem('user')
     
     if (userData) {
       try {
@@ -71,7 +71,7 @@ export default function UserDropdown({
 
   const handleLogout = () => {
     localStorage.removeItem('access_token')
-    localStorage.removeItem('user_data')
+    localStorage.removeItem('user')
     window.location.href = '/auth/login'
   }
 

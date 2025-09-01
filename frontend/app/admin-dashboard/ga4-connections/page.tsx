@@ -50,7 +50,7 @@ export default function GA4ConnectionsAdminPage() {
   useEffect(() => {
     // Check if user is authenticated and is admin
     const token = localStorage.getItem('access_token')
-    const userData = localStorage.getItem('user_data')
+    const userData = localStorage.getItem('user')
     
     if (!token || !userData) {
       router.push('/admin-login')
@@ -80,7 +80,7 @@ export default function GA4ConnectionsAdminPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('access_token')
-    localStorage.removeItem('user_data')
+    localStorage.removeItem('user')
     router.push('/admin-login')
   }
 

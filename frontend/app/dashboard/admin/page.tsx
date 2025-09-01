@@ -267,7 +267,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     // Check if user is admin
-    const userData = localStorage.getItem('user_data')
+    const userData = localStorage.getItem('user')
     if (userData) {
       const user = JSON.parse(userData)
       if (user.role !== 'admin') {
