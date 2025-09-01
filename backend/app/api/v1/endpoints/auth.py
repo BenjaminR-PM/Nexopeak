@@ -82,11 +82,24 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
         
+        # Create organization for new user (personal organization)
+        from app.models.organization import Organization
+        org_name = f"{user_data.name}'s Organization"
+        organization = Organization(
+            name=org_name,
+            domain=user_data.email.split('@')[1] if '@' in user_data.email else None,
+            description=f"Personal organization for {user_data.name}",
+            size="small"
+        )
+        db.add(organization)
+        db.flush()  # Get the org ID before creating user
+        
         # Create new user
         from app.core.security import get_password_hash
         hashed_password = get_password_hash(user_data.password)
         
         new_user = User(
+            org_id=organization.id,
             email=user_data.email,
             hashed_password=hashed_password,
             name=user_data.name
@@ -314,12 +327,26 @@ async def google_oauth_login(
         user = db.query(User).filter(User.email == email).first()
         
         if not user:
+            # Create organization for new user (personal organization)
+            from app.models.organization import Organization
+            org_name = f"{name}'s Organization"
+            organization = Organization(
+                name=org_name,
+                domain=email.split('@')[1] if '@' in email else None,
+                description=f"Personal organization for {name}",
+                size="small"
+            )
+            db.add(organization)
+            db.flush()  # Get the org ID before creating user
+            
             # Create new user from Google data
             user = User(
+                org_id=organization.id,
                 email=email,
                 name=name,
                 hashed_password="google_oauth_user",  # Placeholder for OAuth users
                 is_active=True,
+                is_verified=True,  # Google users are pre-verified
                 # You might want to store google_id in a separate field
             )
             db.add(user)
