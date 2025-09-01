@@ -49,7 +49,7 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
         # Log successful login
         logging_service = get_logging_service()
         logging_service.log_ga4_integration(
-            module=LogModule.AUTHENTICATION,
+            module=LogModule.AUTH,
             message=f"User {user.email} logged in successfully",
             user_id=user.id
         )
@@ -129,7 +129,7 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
         # Log successful registration
         logging_service = get_logging_service()
         logging_service.log_ga4_integration(
-            module=LogModule.AUTHENTICATION,
+            module=LogModule.AUTH,
             message=f"User {new_user.email} registered successfully",
             user_id=new_user.id
         )
@@ -363,7 +363,7 @@ async def google_oauth_login(
             # Log new user creation
             logging_service = get_logging_service()
             logging_service.log_ga4_integration(
-                module=LogModule.AUTHENTICATION,
+                module=LogModule.AUTH,
                 message=f"New user {email} created via Google OAuth",
                 user_id=user.id
             )
@@ -383,7 +383,7 @@ async def google_oauth_login(
         # Log successful Google login
         logging_service = get_logging_service()
         logging_service.log_ga4_integration(
-            module=LogModule.AUTHENTICATION,
+            module=LogModule.AUTH,
             message=f"User {user.email} logged in via Google OAuth",
             user_id=user.id
         )
