@@ -112,7 +112,7 @@ export default function DataWarehousesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [filteredWarehouses, setFilteredWarehouses] = useState(dataWarehouses)
 
-  const categories = ['all', ...new Set(dataWarehouses.map(dw => dw.category.toLowerCase()))]
+  const categories = ['all', ...Array.from(new Set(dataWarehouses.map(dw => dw.category.toLowerCase())))]
 
   useEffect(() => {
     let filtered = dataWarehouses
