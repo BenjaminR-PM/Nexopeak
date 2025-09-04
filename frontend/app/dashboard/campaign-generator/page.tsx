@@ -147,7 +147,7 @@ export default function CampaignGeneratorPage() {
 
   const handleGenerateCampaign = async () => {
     // Check authentication
-    if (!sessionData?.access_token) {
+    if (!isAuthenticated) {
       setAlertMessage('Please log in to generate campaigns')
       setAlertSeverity('error')
       setShowAlert(true)
