@@ -119,10 +119,10 @@ export default function CampaignGeneratorPage() {
 
   // Load campaigns when session is ready
   useEffect(() => {
-    if (!sessionLoading && sessionData?.access_token) {
+    if (!sessionLoading && isAuthenticated) {
       loadCampaigns()
     }
-  }, [sessionLoading, sessionData])
+  }, [sessionLoading, isAuthenticated])
 
   const loadCampaigns = async () => {
     try {
