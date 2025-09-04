@@ -72,12 +72,13 @@ interface UICampaign {
 function convertToUICampaign(apiCampaign: APICampaign): UICampaign {
   let uiType: 'social' | 'email' | 'search' | 'display' = 'email'
   
-  if (apiCampaign.campaign_type === 'social') {
-    uiType = 'social'
-  } else if (apiCampaign.campaign_type === 'search') {
+  // Map API campaign types to UI types
+  if (apiCampaign.campaign_type === 'search') {
     uiType = 'search'
   } else if (apiCampaign.campaign_type === 'display') {
     uiType = 'display'
+  } else if (apiCampaign.campaign_type === 'video') {
+    uiType = 'social' // Map video to social for UI purposes
   }
 
   return {
