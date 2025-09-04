@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexopeak Logo</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .logo-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .logo-primary {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            margin: 0;
+        }
+
+        .logo-tagline {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 8px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-variants {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .variant {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .variant h3 {
+            margin: 0 0 20px 0;
+            color: #374151;
+            font-size: 16px;
+        }
+
+        /* Variant 1: Gradient Blue */
+        .variant-1 .logo {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Variant 2: Dark */
+        .variant-2 .logo {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        /* Variant 3: Tech Style */
+        .variant-3 .logo {
+            font-size: 36px;
+            font-weight: 600;
+            color: #059669;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Variant 4: Modern */
+        .variant-4 .logo {
+            font-size: 36px;
+            font-weight: 300;
+            color: #7c3aed;
+            letter-spacing: 2px;
+        }
+
+        /* Variant 5: Bold */
+        .variant-5 .logo {
+            font-size: 36px;
+            font-weight: 900;
+            color: #dc2626;
+            text-transform: uppercase;
+        }
+
+        /* Variant 6: Elegant */
+        .variant-6 .logo {
+            font-size: 36px;
+            font-weight: 400;
+            color: #374151;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+        }
+
+        .download-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .download-btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .svg-logo {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Logo -->
+    <div class="logo-container">
+        <h1 class="logo-primary">Nexopeak</h1>
+        <p class="logo-tagline">Digital Marketing Analytics</p>
+    </div>
+
+    <!-- Logo Variants -->
+    <div class="logo-variants">
+        <div class="variant variant-1">
+            <h3>Gradient Blue (Recommended)</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+
+        <div class="variant variant-2">
+            <h3>Dark</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+
+        <div class="variant variant-3">
+            <h3>Tech Style</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+
+        <div class="variant variant-4">
+            <h3>Modern</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+
+        <div class="variant variant-5">
+            <h3>Bold</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+
+        <div class="variant variant-6">
+            <h3>Elegant</h3>
+            <div class="logo">Nexopeak</div>
+        </div>
+    </div>
+
+    <!-- SVG Logo for Download -->
+    <div class="download-section">
+        <h3>Download SVG Logo</h3>
+        <div class="svg-logo">
+            <svg id="nexopeak-logo" width="300" height="80" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <text x="150" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="url(#logoGradient)">Nexopeak</text>
+                <text x="150" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b">Digital Marketing Analytics</text>
+            </svg>
+        </div>
+        
+        <button class="download-btn" onclick="downloadSVG()">Download SVG</button>
+        <button class="download-btn" onclick="downloadPNG()">Download PNG</button>
+    </div>
+
+    <script>
+        function downloadSVG() {
+            const svg = document.getElementById('nexopeak-logo');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = svgUrl;
+            downloadLink.download = 'nexopeak-logo.svg';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function downloadPNG() {
+            const svg = document.getElementById('nexopeak-logo');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size (2x for better quality)
+            canvas.width = 600;
+            canvas.height = 160;
+            
+            const img = new Image();
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, 600, 160);
+                
+                canvas.toBlob(function(blob) {
+                    const pngUrl = URL.createObjectURL(blob);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = pngUrl;
+                    downloadLink.download = 'nexopeak-logo.png';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                });
+                
+                URL.revokeObjectURL(url);
+            };
+            
+            img.src = url;
+        }
+    </script>
+</body>
+</html>
+

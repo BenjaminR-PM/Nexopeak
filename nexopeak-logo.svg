@@ -1,0 +1,12 @@
+<svg width="300" height="80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <text x="150" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="url(#logoGradient)">Nexopeak</text>
+  <text x="150" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b">Digital Marketing Analytics</text>
+</svg>
+

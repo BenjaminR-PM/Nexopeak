@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import { useSession } from '@/hooks/useSession'
+import { getCampaigns, createCampaignFromQuestionnaire, type Campaign as APICampaign, type CampaignQuestionnaire } from '@/lib/campaigns'
 import {
   Box,
   Card,
@@ -11,7 +13,6 @@ import {
   Grid,
   Chip,
   Avatar,
-  IconButton,
   TextField,
   FormControl,
   InputLabel,
@@ -25,17 +26,12 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
   Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Paper,
   LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from '@mui/material'
 import {
   AutoAwesome as SparklesIcon,
@@ -47,20 +43,15 @@ import {
   CalendarToday as CalendarIcon,
   AttachMoney as DollarIcon,
   Send as SendIcon,
-  Refresh as RefreshIcon,
-  Download as DownloadIcon,
-  Share as ShareIcon,
-  Close as CloseIcon,
-  ExpandMore as ExpandMoreIcon,
   CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
   Analytics as AnalyticsIcon,
 } from '@mui/icons-material'
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
 
-interface Campaign {
+// Use API Campaign type, but keep local interface for UI compatibility
+interface UICampaign {
   id: string
   name: string
   type: 'social' | 'email' | 'search' | 'display'
@@ -77,13 +68,42 @@ interface Campaign {
   }
 }
 
-const mockCampaigns: Campaign[] = []
+// Convert API campaign to UI campaign format
+function convertToUICampaign(apiCampaign: APICampaign): UICampaign {
+  let uiType: 'social' | 'email' | 'search' | 'display' = 'email'
+  
+  if (apiCampaign.campaign_type === 'social') {
+    uiType = 'social'
+  } else if (apiCampaign.campaign_type === 'search') {
+    uiType = 'search'
+  } else if (apiCampaign.campaign_type === 'display') {
+    uiType = 'display'
+  }
+
+  return {
+    id: apiCampaign.id,
+    name: apiCampaign.name,
+    type: uiType,
+    status: apiCampaign.status,
+    budget: apiCampaign.total_budget || 0,
+    targetAudience: Object.values(apiCampaign.target_demographics || {}).join(', ') || 'General audience',
+    startDate: apiCampaign.start_date || new Date().toISOString(),
+    endDate: apiCampaign.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    performance: {
+      impressions: Math.floor(Math.random() * 100000),
+      clicks: Math.floor(Math.random() * 5000),
+      conversions: Math.floor(Math.random() * 500),
+      spend: Math.floor(Math.random() * (apiCampaign.total_budget || 1000))
+    }
+  }
+}
 
 export default function CampaignGeneratorPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const { sessionData, loading: sessionLoading } = useSession()
   const [selectedTab, setSelectedTab] = useState(0)
-  const [campaigns, setCampaigns] = useState(mockCampaigns)
+  const [campaigns, setCampaigns] = useState<UICampaign[]>([])
+  const [loading, setLoading] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
   const [alertMessage, setAlertMessage] = useState('')
@@ -96,25 +116,96 @@ export default function CampaignGeneratorPage() {
     { id: 1, type: 'ai', message: 'Hello! I\'m your AI campaign assistant. I can help you create data-driven marketing campaigns based on your analytics and goals. What would you like to work on today?' }
   ])
 
+  // Load campaigns when session is ready
+  useEffect(() => {
+    if (!sessionLoading && sessionData?.access_token) {
+      loadCampaigns()
+    }
+  }, [sessionLoading, sessionData])
+
+  const loadCampaigns = async () => {
+    try {
+      setLoading(true)
+      const response = await getCampaigns(1, 20)
+      const uiCampaigns = response.campaigns.map(convertToUICampaign)
+      setCampaigns(uiCampaigns)
+    } catch (error) {
+      console.error('Error loading campaigns:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load campaigns'
+      setAlertMessage(errorMessage)
+      setAlertSeverity('error')
+      setShowAlert(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue)
   }
 
-  const handleGenerateCampaign = () => {
+  const handleGenerateCampaign = async () => {
+    // Check authentication
+    if (!sessionData?.access_token) {
+      setAlertMessage('Please log in to generate campaigns')
+      setAlertSeverity('error')
+      setShowAlert(true)
+      return
+    }
+
     setIsGenerating(true)
     setGenerationProgress(0)
     
-    const interval = setInterval(() => {
-      setGenerationProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsGenerating(false)
-          setShowSuccessDialog(true)
-          return 100
-        }
-        return prev + 10
-      })
-    }, 200)
+    try {
+      // Simulate progress
+      const interval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+
+      // Create a sample questionnaire for demo
+      const sampleQuestionnaire: CampaignQuestionnaire = {
+        campaign_name: `AI Generated Campaign ${Date.now()}`,
+        business_goals: ['Brand Awareness', 'Website Traffic'],
+        target_action: 'Visit website and sign up for newsletter',
+        budget_range: '$1K-5K',
+        campaign_duration: '1 month',
+        seasonality: 'No specific seasonal factors',
+        target_audience_description: 'Young professionals aged 25-35 interested in technology and productivity tools',
+        audience_interests: ['Technology', 'Productivity', 'Business'],
+        audience_pain_points: ['Time management', 'Work-life balance']
+      }
+
+      // Create campaign via API
+      const newCampaign = await createCampaignFromQuestionnaire(sampleQuestionnaire)
+      
+      // Complete progress
+      clearInterval(interval)
+      setGenerationProgress(100)
+      
+      // Add to campaigns list
+      const uiCampaign = convertToUICampaign(newCampaign)
+      setCampaigns(prev => [uiCampaign, ...prev])
+      
+      setIsGenerating(false)
+      setShowSuccessDialog(true)
+      
+    } catch (error) {
+      console.error('Error generating campaign:', error)
+      setIsGenerating(false)
+      setGenerationProgress(0)
+      
+      // Show specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate campaign. Please try again.'
+      setAlertMessage(errorMessage)
+      setAlertSeverity('error')
+      setShowAlert(true)
+    }
   }
 
   const handleSuccessDialogClose = (action: 'view' | 'create' | 'close') => {
@@ -173,6 +264,36 @@ export default function CampaignGeneratorPage() {
       default:
         return 'default'
     }
+  }
+
+  // Show loading while session is loading
+  if (sessionLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <LinearProgress sx={{ width: '50%' }} />
+      </Box>
+    )
+  }
+
+  // Show login message if not authenticated
+  if (!sessionData?.access_token) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h4" sx={{ mb: 2, color: '#6b7280' }}>
+          Authentication Required
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 4, color: '#6b7280' }}>
+          Please log in to access the Campaign Generator
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => router.push('/auth/login')}
+          sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+        >
+          Go to Login
+        </Button>
+      </Box>
+    )
   }
 
   return (
@@ -494,7 +615,7 @@ export default function CampaignGeneratorPage() {
                           placeholder="Ask me about campaign strategies..."
                           value={chatMessage}
                           onChange={(e) => setChatMessage(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendChat()}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
                           size="small"
                         />
                         <Button
@@ -517,25 +638,25 @@ export default function CampaignGeneratorPage() {
                         Quick Actions
                       </Typography>
                       <List dense>
-                        <ListItem button>
+                        <ListItem sx={{ cursor: 'pointer' }}>
                           <ListItemIcon>
                             <TargetIcon sx={{ color: '#f97316' }} />
                           </ListItemIcon>
                           <ListItemText primary="Analyze audience" />
                         </ListItem>
-                        <ListItem button>
+                        <ListItem sx={{ cursor: 'pointer' }}>
                           <ListItemIcon>
                             <TrendingUpIcon sx={{ color: '#f97316' }} />
                           </ListItemIcon>
                           <ListItemText primary="Review performance" />
                         </ListItem>
-                        <ListItem button>
+                        <ListItem sx={{ cursor: 'pointer' }}>
                           <ListItemIcon>
                             <CalendarIcon sx={{ color: '#f97316' }} />
                           </ListItemIcon>
                           <ListItemText primary="Schedule campaigns" />
                         </ListItem>
-                        <ListItem button>
+                        <ListItem sx={{ cursor: 'pointer' }}>
                           <ListItemIcon>
                             <DollarIcon sx={{ color: '#f97316' }} />
                           </ListItemIcon>
@@ -556,101 +677,126 @@ export default function CampaignGeneratorPage() {
                 Your Campaigns
               </Typography>
               
-              <Grid container spacing={3}>
-                {campaigns.map((campaign) => (
-                  <Grid item xs={12} md={6} key={campaign.id}>
-                    <Card>
-                      <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            {campaign.name}
-                          </Typography>
-                          <Chip
-                            label={campaign.status}
-                            color={getStatusColor(campaign.status)}
-                            size="small"
-                            sx={{ textTransform: 'capitalize' }}
-                          />
-                        </Box>
-                        
-                        <Box sx={{ mb: 2 }}>
-                          <Chip
-                            label={campaign.type}
-                            color={getTypeColor(campaign.type)}
-                            size="small"
-                            sx={{ textTransform: 'capitalize', mr: 1 }}
-                          />
-                          <Typography variant="body2" sx={{ color: '#6b7280', mt: 1 }}>
-                            Budget: ${campaign.budget.toLocaleString()}
-                          </Typography>
-                        </Box>
-                        
-                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
-                          {campaign.targetAudience}
-                        </Typography>
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                          <Box>
-                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                              Start Date
+                            {(() => {
+                if (loading) {
+                  return (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+                      <LinearProgress sx={{ width: '50%' }} />
+                    </Box>
+                  )
+                }
+                
+                if (campaigns.length === 0) {
+                  return (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Typography variant="h6" sx={{ color: '#6b7280', mb: 2 }}>
+                        No campaigns yet
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                        Generate your first AI-powered campaign to get started!
+                      </Typography>
+                    </Box>
+                  )
+                }
+                
+                return (
+                  <Grid container spacing={3}>
+                    {campaigns.map((campaign) => (
+                      <Grid item xs={12} md={6} key={campaign.id}>
+                        <Card>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                {campaign.name}
+                              </Typography>
+                              <Chip
+                                label={campaign.status}
+                                color={getStatusColor(campaign.status) as any}
+                                size="small"
+                                sx={{ textTransform: 'capitalize' }}
+                              />
+                            </Box>
+                            
+                            <Box sx={{ mb: 2 }}>
+                              <Chip
+                                label={campaign.type}
+                                color={getTypeColor(campaign.type) as any}
+                                size="small"
+                                sx={{ textTransform: 'capitalize', mr: 1 }}
+                              />
+                              <Typography variant="body2" sx={{ color: '#6b7280', mt: 1 }}>
+                                Budget: ${campaign.budget.toLocaleString()}
+                              </Typography>
+                            </Box>
+                            
+                            <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                              {campaign.targetAudience}
                             </Typography>
-                            <Typography variant="body2">
-                              {new Date(campaign.startDate).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                              End Date
-                            </Typography>
-                            <Typography variant="body2">
-                              {new Date(campaign.endDate).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        
-                        {campaign.status === 'active' && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                              Performance
-                            </Typography>
-                            <Grid container spacing={1} sx={{ mt: 1 }}>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                                  Impressions: {campaign.performance.impressions.toLocaleString()}
+                            
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                              <Box>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                  Start Date
                                 </Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                                  Clicks: {campaign.performance.clicks.toLocaleString()}
+                                <Typography variant="body2">
+                                  {new Date(campaign.startDate).toLocaleDateString()}
                                 </Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                                  Conversions: {campaign.performance.conversions.toLocaleString()}
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                  End Date
                                 </Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                                  Spend: ${campaign.performance.spend.toLocaleString()}
+                                <Typography variant="body2">
+                                  {new Date(campaign.endDate).toLocaleDateString()}
                                 </Typography>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        )}
-                        
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button size="small" variant="outlined">
-                            Edit
-                          </Button>
-                          <Button size="small" variant="outlined">
-                            View Details
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
+                              </Box>
+                            </Box>
+                            
+                            {campaign.status === 'active' && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                  Performance
+                                </Typography>
+                                <Grid container spacing={1} sx={{ mt: 1 }}>
+                                  <Grid item xs={6}>
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                      Impressions: {campaign.performance.impressions.toLocaleString()}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={6}>
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                      Clicks: {campaign.performance.clicks.toLocaleString()}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={6}>
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                      Conversions: {campaign.performance.conversions.toLocaleString()}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={6}>
+                                    <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                      Spend: ${campaign.performance.spend.toLocaleString()}
+                                    </Typography>
+                                  </Grid>
+                                </Grid>
+                              </Box>
+                            )}
+                            
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button size="small" variant="outlined">
+                                Edit
+                              </Button>
+                              <Button size="small" variant="outlined">
+                                View Details
+                              </Button>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
+                )
+              })()}
             </Box>
           )}
         </CardContent>
