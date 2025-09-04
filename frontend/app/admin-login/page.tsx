@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -13,7 +13,6 @@ import {
   Alert,
   InputAdornment,
   IconButton,
-  Divider,
 } from '@mui/material'
 import {
   Visibility,
@@ -33,7 +32,13 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  // Ensure component is mounted before accessing localStorage
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
 
@@ -69,9 +74,18 @@ export default function AdminLoginPage() {
           return
         }
 
-        // Store token and user data
-        localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('user', JSON.stringify(data.user))
+        // Store token and user data (only if mounted)
+        if (mounted && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('access_token', data.access_token)
+            localStorage.setItem('user', JSON.stringify(data.user))
+          } catch (storageError) {
+            console.error('Failed to store auth data:', storageError)
+            setError('Login successful but failed to store session. Please try again.')
+            setIsLoading(false)
+            return
+          }
+        }
         
         // Redirect to admin dashboard
         router.push('/admin-dashboard')
@@ -79,46 +93,17 @@ export default function AdminLoginPage() {
         setError(data.detail || 'Invalid credentials')
       }
     } catch (error) {
-      setError('Network error. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleDemoLogin = async () => {
-    setIsLoading(true)
-    setError('')
-
-    try {
-      // Use the admin credentials we created
-      const adminFormData = {
-        email: 'info@benjaminr.ca',
-        password: '123456789'
-      }
-
-      const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(adminFormData)
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        router.push('/admin-dashboard')
+      console.error('Login error:', error)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setError('Network error. Please check your connection and try again.')
       } else {
-        setError('Demo admin login failed. Please try manual login.')
+        setError('An unexpected error occurred. Please try again.')
       }
-    } catch (error) {
-      setError('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
+
 
   return (
     <Box sx={{ 
@@ -295,36 +280,6 @@ export default function AdminLoginPage() {
               {isLoading ? 'Authenticating...' : 'Access Admin Panel'}
             </Button>
           </form>
-
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
-              Demo Access
-            </Typography>
-          </Divider>
-
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-            sx={{
-              py: 1.5,
-              borderColor: '#dc2626',
-              color: '#dc2626',
-              '&:hover': {
-                borderColor: '#b91c1c',
-                backgroundColor: 'rgba(220, 38, 38, 0.04)',
-              },
-              '&:disabled': {
-                borderColor: '#9ca3af',
-                color: '#9ca3af',
-              },
-              fontWeight: 600,
-              textTransform: 'none'
-            }}
-          >
-            {isLoading ? 'Loading...' : 'Demo Admin Login'}
-          </Button>
 
           {/* Security Notice */}
           <Box sx={{ 

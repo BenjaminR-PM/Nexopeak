@@ -8,18 +8,12 @@ import {
   Plus,
   Target,
   TrendingUp,
-  Settings,
-  Users,
   LogOut,
   User,
   Menu,
   X,
-  BarChart,
   PieChart,
-  Activity,
-  Zap,
   Globe,
-  Shield,
   Database,
   Bell,
   Search
@@ -183,6 +177,7 @@ export default function DashboardLayout({
             <div className="flex flex-col h-full">
               <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
                 <nav className="mt-5 flex-1 px-2 space-y-1">
+                  {/* Dashboard */}
                   <Link
                     href="/dashboard"
                     className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -191,61 +186,84 @@ export default function DashboardLayout({
                     Dashboard
                   </Link>
 
-                  <Link
-                    href="/dashboard/campaigns"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Target className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Campaigns
-                  </Link>
+                  {/* Campaigns Section */}
+                  <div className="pt-4">
+                    <div className="px-2 mb-2">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Campaigns
+                      </h3>
+                    </div>
+                    <div className="space-y-1">
+                      <Link
+                        href="/dashboard/campaigns"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <Target className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Campaigns
+                      </Link>
 
-                  <Link
-                    href="/dashboard/campaign-generator"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Plus className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Campaign Generator
-                  </Link>
+                      <Link
+                        href="/dashboard/campaign-generator"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <Plus className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Campaign Generator
+                      </Link>
 
-                  <Link
-                    href="/dashboard/campaign-analyzer"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Target className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Campaign Analyzer
-                  </Link>
+                      <Link
+                        href="/dashboard/campaign-analyzer"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <TrendingUp className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Campaign Analyzer
+                      </Link>
+                    </div>
+                  </div>
 
-                  <Link
-                    href="/dashboard/connections"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Globe className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Connections
-                  </Link>
+                  {/* Integrations Section */}
+                  <div className="pt-4">
+                    <div className="px-2 mb-2">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Integrations
+                      </h3>
+                    </div>
+                    <div className="space-y-1">
+                      <Link
+                        href="/dashboard/connections"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <Globe className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Connections
+                      </Link>
 
-                  <Link
-                    href="/dashboard/data-warehouses"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Database className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Data Warehouses
-                  </Link>
+                      <Link
+                        href="/dashboard/data-warehouses"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <Database className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Data Warehouses
+                      </Link>
 
-                  <Link
-                    href="/dashboard/reports"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <PieChart className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Reports
-                  </Link>
+                      <Link
+                        href="/dashboard/reports"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <PieChart className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Reports
+                      </Link>
+                    </div>
+                  </div>
 
-                  <Link
-                    href="/dashboard/profile"
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <User className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    Profile
-                  </Link>
+                  {/* Profile Section */}
+                  <div className="pt-4">
+                    <Link
+                      href="/dashboard/profile"
+                      className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    >
+                      <User className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                      Profile
+                    </Link>
+                  </div>
                 </nav>
               </div>
             </div>
