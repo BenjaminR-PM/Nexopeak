@@ -45,7 +45,7 @@ async def get_current_user(
             )
         
         return user
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -70,9 +70,9 @@ async def get_connections(
                 "provider": conn.provider,
                 "status": conn.status,
                 "external_id": conn.external_id,
-                "created_at": conn.created_at,
-                "last_sync": conn.last_sync,
-                "next_sync": conn.next_sync
+                "created_at": conn.created_at.isoformat() if conn.created_at else None,
+                "last_sync": conn.last_sync_at.isoformat() if conn.last_sync_at else None,
+                "next_sync": None  # Next sync calculation will be implemented per provider
             })
         
         return {"connections": connection_list}

@@ -17,6 +17,9 @@ class Connection(Base):
     scopes = Column(JSON, default=[], nullable=False)  # OAuth scopes
     status = Column(String(20), default="connected", nullable=False)  # connected, error, revoked
     connection_metadata = Column(JSON, default={}, nullable=False)  # Provider-specific metadata
+    access_token = Column(Text, nullable=True)  # OAuth access token
+    refresh_token = Column(Text, nullable=True)  # OAuth refresh token
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)  # Token expiration
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_status = Column(String(20), nullable=True)  # success, error, pending
     error_message = Column(Text, nullable=True)
@@ -39,7 +42,7 @@ class Connection(Base):
         """Check if connection needs to be synced."""
         if not self.last_sync_at:
             return True
-        # TODO: Implement sync frequency logic based on provider
+        # Sync frequency logic will be implemented per provider
         return False
 
     def get_metadata(self, key: str, default=None):

@@ -33,20 +33,17 @@ import {
   FormControlLabel,
 } from '@mui/material'
 import {
-  Link as LinkIcon,
   Add as AddIcon,
   Settings as SettingsIcon,
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Schedule as ClockIcon,
-  Launch as ExternalLinkIcon,
   Delete as TrashIcon,
   BarChart as BarChartIcon,
   Search as SearchIcon,
   TrendingUp as TrendingUpIcon,
   Email as MailIcon,
-  CalendarToday as CalendarIcon,
   People as UsersIcon,
   Language as GlobeIcon,
   Close as CloseIcon,
@@ -65,6 +62,10 @@ interface Connection {
   dataPoints: number
   icon: React.ReactNode
   description: string
+  external_id?: string
+  created_at?: string
+  last_sync?: string
+  next_sync?: string
 }
 
 const availableConnections: Connection[] = [
@@ -143,7 +144,66 @@ export default function ConnectionsPage() {
   const [alertMessage, setAlertMessage] = useState('')
   const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success')
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null)
+  const [loading, setLoading] = useState(true)
   const searchParams = useSearchParams()
+
+  // Load user's actual connections from backend
+  const loadUserConnections = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      const response = await fetch(`${apiUrl}/api/v1/connections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const userConnections = data.connections || []
+        
+        // Merge user connections with available connections template
+        const updatedConnections = availableConnections.map(template => {
+          const userConnection = userConnections.find((uc: any) => uc.provider === template.id)
+          
+          if (userConnection) {
+            return {
+              ...template,
+              id: userConnection.id,
+              name: userConnection.name,
+              status: userConnection.status === 'connected' ? 'connected' : 'disconnected',
+              lastSync: userConnection.last_sync ? new Date(userConnection.last_sync).toLocaleDateString() : 'Never',
+              nextSync: userConnection.next_sync ? new Date(userConnection.next_sync).toLocaleDateString() : 'Not scheduled',
+              external_id: userConnection.external_id,
+              created_at: userConnection.created_at,
+              dataPoints: 0 // Will be updated when data sync is implemented
+            }
+          }
+          
+          return template
+        })
+        
+        setConnections(updatedConnections)
+      } else {
+        console.error('Failed to load connections:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error loading connections:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load connections on component mount
+  useEffect(() => {
+    loadUserConnections()
+  }, [])
 
   // Handle OAuth callback results
   useEffect(() => {
@@ -151,14 +211,8 @@ export default function ConnectionsPage() {
     const error = searchParams.get('error')
     
     if (success === 'ga4_connected') {
-      // Update GA4 connection status
-      setConnections(prev => 
-        prev.map(conn => 
-          conn.id === 'ga4' 
-            ? { ...conn, status: 'connected', lastSync: 'Just now', nextSync: 'In 24 hours' }
-            : conn
-        )
-      )
+      // Reload connections to get the updated status from backend
+      loadUserConnections()
       setAlertMessage('Google Analytics connected successfully!')
       setAlertSeverity('success')
       setShowAlert(true)
@@ -284,18 +338,43 @@ export default function ConnectionsPage() {
         }
       }
 
-  const handleDisconnect = (connectionId: string) => {
-    setConnections(prev => 
-      prev.map(conn => 
-        conn.id === connectionId 
-          ? { ...conn, status: 'disconnected', lastSync: 'Never', nextSync: 'Not scheduled' }
-          : conn
-      )
-    )
-    setAlertMessage('Connection disconnected successfully!')
-    setAlertSeverity('success')
-    setShowAlert(true)
-    setTimeout(() => setShowAlert(false), 3000)
+  const handleDisconnect = async (connectionId: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        setAlertMessage('Please log in to disconnect')
+        setAlertSeverity('error')
+        setShowAlert(true)
+        setTimeout(() => setShowAlert(false), 3000)
+        return
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      const response = await fetch(`${apiUrl}/api/v1/connections/${connectionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        // Reload connections to reflect the change
+        loadUserConnections()
+        setAlertMessage('Connection disconnected successfully!')
+        setAlertSeverity('success')
+        setShowAlert(true)
+        setTimeout(() => setShowAlert(false), 3000)
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+    } catch (error) {
+      console.error('Failed to disconnect:', error)
+      setAlertMessage('Failed to disconnect. Please try again.')
+      setAlertSeverity('error')
+      setShowAlert(true)
+      setTimeout(() => setShowAlert(false), 3000)
+    }
   }
 
   const handleRefresh = (connectionId: string) => {
@@ -429,6 +508,14 @@ export default function ConnectionsPage() {
           <Typography variant="h5" component="h2" sx={{ fontWeight: 600, mb: 3 }}>
             All Connections
           </Typography>
+          
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                Loading connections...
+              </Typography>
+            </Box>
+          )}
           
           <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
             <Table>
