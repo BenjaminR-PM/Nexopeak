@@ -63,6 +63,7 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
                 id=user.id,
                 email=user.email,
                 name=user.name,
+                role=user.role,
                 is_active=user.is_active
             )
         )
@@ -149,6 +150,7 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
                 id=new_user.id,
                 email=new_user.email,
                 name=new_user.name,
+                role=new_user.role,
                 is_active=new_user.is_active
             )
         )
@@ -409,6 +411,7 @@ async def google_oauth_login(
                 id=user.id,
                 email=user.email,
                 name=user.name,
+                role=user.role,
                 is_active=user.is_active
             )
         )
@@ -442,6 +445,7 @@ async def get_current_user(
             id=user.id,
             email=user.email,
             name=user.name,
+            role=user.role,
             is_active=user.is_active
         )
         
