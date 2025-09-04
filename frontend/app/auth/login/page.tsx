@@ -167,6 +167,7 @@ export default function LoginPage() {
               <Zap className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+            <p className="text-orange-600 font-semibold mb-1">Discover Your Next Marketing Peak</p>
             <p className="text-gray-600">Sign in to your Nexopeak account</p>
           </div>
 

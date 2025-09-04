@@ -100,9 +100,12 @@ export default function DashboardLayout({
                 {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
               
-              <Link href="/dashboard" className="text-2xl font-bold text-primary-600">
-                Nexopeak
-              </Link>
+              <div>
+                <Link href="/dashboard" className="text-2xl font-bold text-primary-600">
+                  Nexopeak
+                </Link>
+                <div className="text-xs text-gray-500 font-medium">Discover Your Next Marketing Peak</div>
+              </div>
 
               {/* Campaign Dropdown */}
               <div className="relative">

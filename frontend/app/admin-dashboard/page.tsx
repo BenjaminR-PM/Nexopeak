@@ -216,6 +216,9 @@ export default function AdminDashboardPage() {
                 <Typography variant="h4" component="h1" fontWeight={700} color="#1e3a8a">
                   Nexopeak Platform Admin
                 </Typography>
+                <Typography variant="subtitle2" sx={{ color: '#dc2626', fontWeight: 600, mb: 1 }}>
+                  Discover Your Next Marketing Peak
+                </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                   Analytics Platform Management Dashboard
                 </Typography>

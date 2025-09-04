@@ -41,6 +41,9 @@ export default function HomePage() {
               Make Performance Marketing{' '}
               <span className="text-gradient">Obvious</span>
             </h1>
+            <p className="text-2xl font-semibold text-primary-600 mb-4 tracking-wide">
+              Discover Your Next Marketing Peak
+            </p>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Connect GA4 and get daily, explainable recommendations that improve campaigns without needing ad-spend or CRM data. Get actionable insights in under 10 minutes.
             </p>
@@ -146,6 +149,7 @@ export default function HomePage() {
             {/* Company Info */}
             <div className="text-center md:text-left">
               <h3 className="text-2xl font-bold text-white mb-4">Nexopeak</h3>
+              <p className="mb-2 text-primary-200 font-medium">Discover Your Next Marketing Peak</p>
               <p className="mb-4">Making performance marketing obvious with data-driven insights</p>
               <p className="text-sm">© 2024 Nexopeak. All rights reserved.</p>
             </div>

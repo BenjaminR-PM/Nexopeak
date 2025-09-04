@@ -77,6 +77,9 @@ export default function DashboardPage() {
         <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
           Welcome to Nexopeak!
         </Typography>
+        <Typography variant="h6" sx={{ color: '#f97316', fontWeight: 600, mb: 2 }}>
+          Discover Your Next Marketing Peak
+        </Typography>
         <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
           {userData ? `Hello, ${userData.name}! ` : ''}Your analytics dashboard is ready to track your website performance.
         </Typography>

@@ -163,6 +163,9 @@ export default function AdminLoginPage() {
             }}>
               Admin Portal
             </Typography>
+            <Typography variant="body2" sx={{ color: '#dc2626', fontWeight: 600, mb: 1 }}>
+              Discover Your Next Marketing Peak
+            </Typography>
             <Typography variant="body1" sx={{ color: '#64748b' }}>
               Secure access to Nexopeak administration
             </Typography>

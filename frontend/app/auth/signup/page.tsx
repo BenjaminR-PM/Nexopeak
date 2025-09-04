@@ -188,6 +188,7 @@ export default function SignupPage() {
               <Zap className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
+            <p className="text-orange-600 font-semibold mb-1">Discover Your Next Marketing Peak</p>
             <p className="text-gray-600">Join Nexopeak and start optimizing your campaigns</p>
           </div>
 
