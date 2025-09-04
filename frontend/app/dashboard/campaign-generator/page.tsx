@@ -101,7 +101,7 @@ function convertToUICampaign(apiCampaign: APICampaign): UICampaign {
 
 export default function CampaignGeneratorPage() {
   const router = useRouter()
-  const { sessionData, loading: sessionLoading } = useSession()
+  const { user, isAuthenticated, isLoading: sessionLoading } = useSession()
   const [selectedTab, setSelectedTab] = useState(0)
   const [campaigns, setCampaigns] = useState<UICampaign[]>([])
   const [loading, setLoading] = useState(false)
