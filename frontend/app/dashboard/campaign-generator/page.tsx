@@ -277,7 +277,7 @@ export default function CampaignGeneratorPage() {
   }
 
   // Show login message if not authenticated
-  if (!sessionData?.access_token) {
+  if (!isAuthenticated) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <Typography variant="h4" sx={{ mb: 2, color: '#6b7280' }}>
