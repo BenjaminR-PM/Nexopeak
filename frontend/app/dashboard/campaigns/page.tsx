@@ -113,13 +113,18 @@ export default function CampaignsPage() {
       setLoading(true)
       const token = localStorage.getItem('access_token')
       
+      console.log('🔍 Loading campaigns...')
+      console.log('🔑 Token exists:', !!token)
+      
       if (!token) {
+        console.log('❌ No token found, showing empty state')
         setCampaigns([])
         setLoading(false)
         return
       }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      console.log('🌐 API URL:', API_URL)
       
       const response = await fetch(`${API_URL}/api/v1/campaigns/`, {
         method: 'GET',
@@ -129,14 +134,22 @@ export default function CampaignsPage() {
         },
       })
 
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 API Response data:', data)
+        console.log('📋 Campaigns array:', data.campaigns)
         setCampaigns(data.campaigns || [])
       } else {
+        console.log('❌ API request failed with status:', response.status)
+        const errorText = await response.text()
+        console.log('❌ Error response:', errorText)
         setCampaigns([])
       }
     } catch (error) {
-      console.error('Failed to load campaigns:', error)
+      console.error('❌ Failed to load campaigns:', error)
       setCampaigns([])
     } finally {
       setLoading(false)
@@ -155,10 +168,16 @@ export default function CampaignsPage() {
 
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
+      console.log('🗑️ Attempting to delete campaign:', campaignId)
       const token = localStorage.getItem('access_token')
-      if (!token) return
+      if (!token) {
+        console.log('❌ No token for delete operation')
+        alert('Please log in to delete campaigns')
+        return
+      }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      console.log('🌐 Delete API URL:', `${API_URL}/api/v1/campaigns/${campaignId}`)
       
       const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
         method: 'DELETE',
@@ -168,15 +187,21 @@ export default function CampaignsPage() {
         },
       })
 
+      console.log('📡 Delete response status:', response.status)
+      console.log('📡 Delete response ok:', response.ok)
+
       if (response.ok) {
         setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+        console.log('✅ Campaign deleted successfully from local state')
         alert('Campaign deleted successfully!')
       } else {
-        alert('Failed to delete campaign')
+        const errorText = await response.text()
+        console.log('❌ Delete failed:', errorText)
+        alert('Failed to delete campaign: ' + errorText)
       }
     } catch (error) {
-      console.error('Error deleting campaign:', error)
-      alert('Error deleting campaign')
+      console.error('❌ Error deleting campaign:', error)
+      alert('Error deleting campaign: ' + error.message)
     }
     handleMenuClose()
   }
