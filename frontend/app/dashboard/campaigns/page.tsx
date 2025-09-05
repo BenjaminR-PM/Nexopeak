@@ -201,7 +201,7 @@ export default function CampaignsPage() {
       }
     } catch (error) {
       console.error('❌ Error deleting campaign:', error)
-      alert('Error deleting campaign: ' + error.message)
+      alert('Error deleting campaign: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
     handleMenuClose()
   }
