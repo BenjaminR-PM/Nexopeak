@@ -65,95 +65,6 @@ interface Campaign {
   createdBy?: string
 }
 
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    name: 'Holiday Shopping Campaign',
-    description: 'Holiday shopping campaign for Q4',
-    status: 'active',
-    platform: 'Google Ads',
-    campaign_type: 'Search',
-    primary_objective: 'ecommerce_sales',
-    total_budget: 5000,
-    daily_budget: 150,
-    currency: 'USD',
-    start_date: '2024-01-15T00:00:00Z',
-    end_date: '2024-02-15T00:00:00Z',
-    target_locations: ['United States', 'Canada'],
-    target_demographics: { age: '25-54', gender: 'all' },
-    target_interests: ['shopping', 'technology'],
-    is_active: true,
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-20T10:30:00Z',
-    org_id: 'org-1',
-    user_id: 'user-1',
-    // Legacy fields for compatibility
-    type: 'Search',
-    budget: { total: 5000, spent: 2340, daily: 150 },
-    performance: { impressions: 45230, clicks: 1820, ctr: 4.02, conversions: 89, roas: 3.2 },
-    dateRange: { start: '2024-01-15', end: '2024-02-15' },
-    lastModified: '2024-01-20T10:30:00Z',
-    createdBy: 'John Doe'
-  },
-  {
-    id: '2',
-    name: 'Brand Awareness Q1',
-    description: 'Brand awareness campaign for Q1',
-    status: 'paused',
-    platform: 'Facebook Ads',
-    campaign_type: 'Display',
-    primary_objective: 'awareness',
-    total_budget: 3000,
-    daily_budget: 100,
-    currency: 'USD',
-    start_date: '2024-01-01T00:00:00Z',
-    end_date: '2024-03-31T00:00:00Z',
-    target_locations: ['United States'],
-    target_demographics: { age: '18-65', gender: 'all' },
-    target_interests: ['business', 'marketing'],
-    is_active: false,
-    created_at: '2024-01-01T10:30:00Z',
-    updated_at: '2024-01-18T14:20:00Z',
-    org_id: 'org-1',
-    user_id: 'user-2',
-    // Legacy fields for compatibility
-    type: 'Display',
-    budget: { total: 3000, spent: 1200, daily: 100 },
-    performance: { impressions: 125000, clicks: 890, ctr: 0.71, conversions: 23, roas: 1.8 },
-    dateRange: { start: '2024-01-01', end: '2024-03-31' },
-    lastModified: '2024-01-18T14:20:00Z',
-    createdBy: 'Sarah Smith'
-  },
-  {
-    id: '3',
-    name: 'Product Launch Campaign',
-    description: 'Product launch campaign for new product',
-    status: 'draft',
-    platform: 'Instagram',
-    campaign_type: 'Social',
-    primary_objective: 'awareness',
-    total_budget: 2500,
-    daily_budget: 80,
-    currency: 'USD',
-    start_date: '2024-02-01T00:00:00Z',
-    end_date: '2024-02-28T00:00:00Z',
-    target_locations: ['United States'],
-    target_demographics: { age: '18-35', gender: 'all' },
-    target_interests: ['lifestyle', 'fashion'],
-    is_active: false,
-    created_at: '2024-01-19T09:15:00Z',
-    updated_at: '2024-01-19T09:15:00Z',
-    org_id: 'org-1',
-    user_id: 'user-3',
-    // Legacy fields for compatibility
-    type: 'Social',
-    budget: { total: 2500, spent: 0, daily: 80 },
-    performance: { impressions: 0, clicks: 0, ctr: 0, conversions: 0, roas: 0 },
-    dateRange: { start: '2024-02-01', end: '2024-02-28' },
-    lastModified: '2024-01-19T09:15:00Z',
-    createdBy: 'Mike Johnson'
-  }
-]
 
 const statusColors = {
   active: '#4caf50',
@@ -255,9 +166,9 @@ export default function CampaignsPortfolioPage() {
         const token = localStorage.getItem('access_token')
         
         if (!token) {
-          // Use mock data if no token
-          setCampaigns(mockCampaigns)
-          setFilteredCampaigns(mockCampaigns)
+          // No token, show empty state
+          setCampaigns([])
+          setFilteredCampaigns([])
           setLoading(false)
           return
         }
@@ -283,20 +194,20 @@ export default function CampaignsPortfolioPage() {
             setCampaigns(data.campaigns || [])
             setFilteredCampaigns(data.campaigns || [])
           } else {
-            // Fallback to mock data
-            setCampaigns(mockCampaigns)
-            setFilteredCampaigns(mockCampaigns)
+            // API error, show empty state
+            setCampaigns([])
+            setFilteredCampaigns([])
           }
         } catch (fetchError) {
           console.error('Failed to fetch campaigns:', fetchError)
-          // Fallback to mock data
-          setCampaigns(mockCampaigns)
-          setFilteredCampaigns(mockCampaigns)
+          // Network error, show empty state
+          setCampaigns([])
+          setFilteredCampaigns([])
         }
       } catch (error) {
         console.error('Failed to load campaigns:', error)
-        setCampaigns(mockCampaigns)
-        setFilteredCampaigns(mockCampaigns)
+        setCampaigns([])
+        setFilteredCampaigns([])
       } finally {
         setLoading(false)
       }
@@ -304,18 +215,6 @@ export default function CampaignsPortfolioPage() {
 
     // Call the function immediately
     loadCampaigns()
-    
-    // Fallback timeout - if loading takes too long, show mock data
-    const fallbackTimeout = setTimeout(() => {
-      if (loading && campaigns.length === 0) {
-        console.log('Fallback timeout triggered, showing mock data')
-        setCampaigns(mockCampaigns)
-        setFilteredCampaigns(mockCampaigns)
-        setLoading(false)
-      }
-    }, 5000) // 5 second fallback
-
-    return () => clearTimeout(fallbackTimeout)
   }, [])
 
   // Filter campaigns
@@ -628,8 +527,46 @@ export default function CampaignsPortfolioPage() {
         </CardContent>
       </Card>
 
+      {/* Empty State */}
+      {filteredCampaigns.length === 0 && !loading ? (
+        <Card sx={{ textAlign: 'center', py: 8 }}>
+          <CardContent>
+            <CampaignIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              No Campaigns Found
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {campaigns.length === 0 
+                ? "You haven't created any campaigns yet. Get started by creating your first campaign!"
+                : "No campaigns match your current filters. Try adjusting your search criteria."
+              }
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => router.push('/dashboard/campaign-designer')}
+              sx={{ mr: 2 }}
+            >
+              Create Campaign
+            </Button>
+            {campaigns.length > 0 && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearchTerm('')
+                  setStatusFilter('all')
+                  setPlatformFilter('all')
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Campaigns List/Grid */}
-      {viewMode === 'list' ? (
+      {filteredCampaigns.length > 0 && viewMode === 'list' ? (
         <Card>
           <TableContainer>
             <Table>
@@ -763,7 +700,7 @@ export default function CampaignsPortfolioPage() {
             </Table>
           </TableContainer>
         </Card>
-      ) : (
+      ) : filteredCampaigns.length > 0 ? (
         <Grid container spacing={3}>
           {filteredCampaigns.map((campaign) => (
             <Grid item xs={12} sm={6} md={4} key={campaign.id}>
@@ -840,7 +777,7 @@ export default function CampaignsPortfolioPage() {
             </Grid>
           ))}
         </Grid>
-      )}
+      ) : null}
 
       {/* Action Menu */}
       <Menu
