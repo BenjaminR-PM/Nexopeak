@@ -28,7 +28,13 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  Grid,
+  Tabs,
+  Tab,
+  Avatar,
+  Stack,
+  Divider
 } from '@mui/material'
 import {
   Search as SearchIcon,
@@ -38,7 +44,17 @@ import {
   Business as BusinessIcon,
   Email as EmailIcon,
   CalendarToday as CalendarIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Campaign as CampaignIcon,
+  Link as LinkIcon,
+  Visibility as ViewIcon,
+  Facebook as FacebookIcon,
+  Instagram as InstagramIcon,
+  LinkedIn as LinkedInIcon,
+  Twitter as TwitterIcon,
+  Google as GoogleIcon,
+  Web as WebIcon,
+  YouTube as YouTubeIcon
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 
@@ -52,6 +68,36 @@ interface User {
   created_at: string
   last_login?: string
   is_active: boolean
+}
+
+interface Campaign {
+  id: string
+  name: string
+  description?: string
+  status: 'active' | 'paused' | 'draft' | 'completed' | 'archived'
+  platform: string
+  campaign_type: string
+  primary_objective: string
+  total_budget?: number
+  daily_budget?: number
+  currency: string
+  start_date?: string
+  end_date?: string
+  target_locations: string[]
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface Connection {
+  id: string
+  name: string
+  type: string
+  platform: string
+  status: 'active' | 'inactive' | 'error'
+  created_at: string
+  last_sync?: string
+  config?: any
 }
 
 export default function UserManagementPage() {
@@ -71,6 +117,14 @@ export default function UserManagementPage() {
     role: 'user' as 'user' | 'admin',
     is_active: true
   })
+  
+  // New state for user details view
+  const [selectedUserForView, setSelectedUserForView] = useState<User | null>(null)
+  const [userCampaigns, setUserCampaigns] = useState<Campaign[]>([])
+  const [userConnections, setUserConnections] = useState<Connection[]>([])
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [tabValue, setTabValue] = useState(0)
+  const [loadingUserData, setLoadingUserData] = useState(false)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
 
@@ -119,7 +173,7 @@ export default function UserManagementPage() {
       filtered = filtered.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.organization_name && user.organization_name.toLowerCase().includes(searchTerm.toLowerCase()))
+        user.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -161,6 +215,112 @@ export default function UserManagementPage() {
       console.error('Error updating user:', error)
       setError('Failed to update user. Please try again.')
     }
+  }
+
+  // Fetch user-specific campaigns
+  const fetchUserCampaigns = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${apiUrl}/api/v1/admin/users/${userId}/campaigns`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserCampaigns(data.campaigns || [])
+      } else {
+        setUserCampaigns([])
+      }
+    } catch (error) {
+      console.error('Error fetching user campaigns:', error)
+      setUserCampaigns([])
+    }
+  }
+
+  // Fetch user-specific connections
+  const fetchUserConnections = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${apiUrl}/api/v1/admin/users/${userId}/connections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserConnections(data.connections || [])
+      } else {
+        setUserConnections([])
+      }
+    } catch (error) {
+      console.error('Error fetching user connections:', error)
+      setUserConnections([])
+    }
+  }
+
+  // Handle viewing user details
+  const handleViewUser = async (user: User) => {
+    setSelectedUserForView(user)
+    setViewDialogOpen(true)
+    setLoadingUserData(true)
+    setTabValue(0)
+    
+    // Fetch user's campaigns and connections
+    await Promise.all([
+      fetchUserCampaigns(user.id),
+      fetchUserConnections(user.id)
+    ])
+    
+    setLoadingUserData(false)
+  }
+
+  // Helper functions for rendering
+  const getChannelIcon = (platform: string) => {
+    const platformLower = platform.toLowerCase()
+    const iconProps = { sx: { fontSize: 20 } }
+    
+    if (platformLower.includes('facebook')) return <FacebookIcon {...iconProps} />
+    if (platformLower.includes('instagram')) return <InstagramIcon {...iconProps} />
+    if (platformLower.includes('linkedin')) return <LinkedInIcon {...iconProps} />
+    if (platformLower.includes('twitter')) return <TwitterIcon {...iconProps} />
+    if (platformLower.includes('google')) return <GoogleIcon {...iconProps} />
+    if (platformLower.includes('youtube')) return <YouTubeIcon {...iconProps} />
+    return <WebIcon {...iconProps} />
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success'
+      case 'paused': return 'warning'
+      case 'draft': return 'default'
+      case 'completed': return 'info'
+      case 'archived': return 'error'
+      case 'inactive': return 'warning'
+      case 'error': return 'error'
+      default: return 'default'
+    }
+  }
+
+  const formatCurrency = (amount: number, currency = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   // Open edit dialog
@@ -383,15 +543,26 @@ export default function UserManagementPage() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Tooltip title="Edit User">
-                          <IconButton 
-                            onClick={() => openEditDialog(user)}
-                            size="small"
-                            sx={{ color: '#dc2626' }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title="View Campaigns & Connections">
+                            <IconButton 
+                              onClick={() => handleViewUser(user)}
+                              size="small"
+                              sx={{ color: '#1976d2' }}
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit User">
+                            <IconButton 
+                              onClick={() => openEditDialog(user)}
+                              size="small"
+                              sx={{ color: '#dc2626' }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -464,6 +635,244 @@ export default function UserManagementPage() {
             >
               Update User
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* User Details Dialog */}
+        <Dialog 
+          open={viewDialogOpen} 
+          onClose={() => setViewDialogOpen(false)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: '#1976d2' }}>
+                <PersonIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6">
+                  {selectedUserForView?.name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                  {selectedUserForView?.email}
+                </Typography>
+              </Box>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+              <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+                <Tab 
+                  label={`Campaigns (${userCampaigns.length})`} 
+                  icon={<CampaignIcon />}
+                  iconPosition="start"
+                />
+                <Tab 
+                  label={`Connections (${userConnections.length})`} 
+                  icon={<LinkIcon />}
+                  iconPosition="start"
+                />
+              </Tabs>
+            </Box>
+
+            {loadingUserData ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                {/* Campaigns Tab */}
+                {tabValue === 0 && (
+                  <Box>
+                    {userCampaigns.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <CampaignIcon sx={{ fontSize: 48, color: '#9ca3af', mb: 2 }} />
+                        <Typography variant="h6" sx={{ color: '#6b7280' }}>
+                          No campaigns found
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                          This user hasn't created any campaigns yet.
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Grid container spacing={2}>
+                        {userCampaigns.map((campaign) => (
+                          <Grid item xs={12} md={6} key={campaign.id}>
+                            <Card variant="outlined">
+                              <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {getChannelIcon(campaign.platform)}
+                                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                                      {campaign.name}
+                                    </Typography>
+                                  </Box>
+                                  <Chip
+                                    label={campaign.status}
+                                    size="small"
+                                    color={getStatusColor(campaign.status) as any}
+                                    variant="outlined"
+                                  />
+                                </Box>
+                                
+                                {campaign.description && (
+                                  <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                                    {campaign.description.length > 100 
+                                      ? campaign.description.substring(0, 100) + '...'
+                                      : campaign.description}
+                                  </Typography>
+                                )}
+
+                                <Stack spacing={1}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Platform:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {campaign.platform}
+                                    </Typography>
+                                  </Box>
+                                  
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Objective:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {campaign.primary_objective}
+                                    </Typography>
+                                  </Box>
+
+                                  {campaign.total_budget && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                        Total Budget:
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {formatCurrency(campaign.total_budget, campaign.currency)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+
+                                  {campaign.daily_budget && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                        Daily Budget:
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {formatCurrency(campaign.daily_budget, campaign.currency)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+
+                                  <Divider sx={{ my: 1 }} />
+                                  
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Created:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {formatDate(campaign.created_at)}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    )}
+                  </Box>
+                )}
+
+                {/* Connections Tab */}
+                {tabValue === 1 && (
+                  <Box>
+                    {userConnections.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <LinkIcon sx={{ fontSize: 48, color: '#9ca3af', mb: 2 }} />
+                        <Typography variant="h6" sx={{ color: '#6b7280' }}>
+                          No connections found
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                          This user hasn't set up any integrations yet.
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Grid container spacing={2}>
+                        {userConnections.map((connection) => (
+                          <Grid item xs={12} md={6} key={connection.id}>
+                            <Card variant="outlined">
+                              <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {getChannelIcon(connection.platform)}
+                                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                                      {connection.name}
+                                    </Typography>
+                                  </Box>
+                                  <Chip
+                                    label={connection.status}
+                                    size="small"
+                                    color={getStatusColor(connection.status) as any}
+                                    variant="outlined"
+                                  />
+                                </Box>
+
+                                <Stack spacing={1}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Type:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {connection.type}
+                                    </Typography>
+                                  </Box>
+                                  
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Platform:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {connection.platform}
+                                    </Typography>
+                                  </Box>
+
+                                  <Divider sx={{ my: 1 }} />
+                                  
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      Created:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {formatDate(connection.created_at)}
+                                    </Typography>
+                                  </Box>
+
+                                  {connection.last_sync && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                        Last Sync:
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {formatDate(connection.last_sync)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Stack>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    )}
+                  </Box>
+                )}
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>

@@ -481,6 +481,62 @@ async def update_user(
 
 
 # ============================================================================
+# User-Specific Data
+# ============================================================================
+
+@router.get("/users/{user_id}/campaigns")
+async def get_user_campaigns(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Get campaigns for a specific user."""
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get user's campaigns
+        campaigns = db.query(Campaign).filter(
+            and_(Campaign.user_id == user_id, Campaign.org_id == user.org_id)
+        ).all()
+        
+        return {"campaigns": campaigns}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/users/{user_id}/connections")
+async def get_user_connections(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Get connections for a specific user."""
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get user's connections
+        connections = db.query(Connection).filter(
+            and_(Connection.user_id == user_id, Connection.org_id == user.org_id)
+        ).all()
+        
+        return {"connections": connections}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # Audit Logs
 # ============================================================================
 
