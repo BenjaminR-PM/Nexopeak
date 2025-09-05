@@ -393,7 +393,7 @@ class CampaignAnalyzerService:
             analysis.error_message = str(e)
             self.db.commit()
     
-    def _fetch_ga4_data(self, org_id: UUID) -> Dict[str, Any]:
+    def _fetch_ga4_data(self, org_id: str) -> Dict[str, Any]:
         """Fetch GA4 data for comparison"""
         # Get GA4 connection for the organization
         ga4_connection = self.db.query(Connection).filter(
