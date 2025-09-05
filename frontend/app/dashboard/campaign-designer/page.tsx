@@ -288,11 +288,12 @@ export default function CampaignDesignerPage() {
     
     const activeChannels = channels.filter(c => weights[c]);
     const totalWeight = activeChannels.reduce((sum, c) => sum + weights[c], 0);
+    const safeBudget = budget || 0;
     
     return activeChannels.map(channel => ({
       channel,
-      percentage: Math.round((weights[channel] / totalWeight) * 100),
-      amount: Math.round((weights[channel] / totalWeight) * budget)
+      percentage: totalWeight > 0 ? Math.round((weights[channel] / totalWeight) * 100) : 0,
+      amount: totalWeight > 0 && safeBudget > 0 ? Math.round((weights[channel] / totalWeight) * safeBudget) : 0
     }));
   }, [channels, objective, budget]);
 
@@ -984,7 +985,7 @@ export default function CampaignDesignerPage() {
                                 Budget Efficiency
                               </Typography>
                               <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                                ${Math.round(budget / duration).toLocaleString()}/day
+                                ${budget && duration ? Math.round(budget / duration).toLocaleString() : '0'}/day
                               </Typography>
                             </Box>
                           </Grid>
