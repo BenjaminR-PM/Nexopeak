@@ -425,6 +425,10 @@ export async function getCampaignAnalysisFull(campaignId: string): Promise<{
  */
 export async function createCampaignFromDesigner(designerData: CampaignDesignerData): Promise<Campaign> {
   try {
+    console.log('Sending campaign data to API:', designerData);
+    console.log('API URL:', `${API_BASE_URL}/api/v1/campaigns/from-designer`);
+    console.log('Headers:', getAuthHeaders());
+    
     const response = await fetch(`${API_BASE_URL}/api/v1/campaigns/from-designer`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -432,7 +436,19 @@ export async function createCampaignFromDesigner(designerData: CampaignDesignerD
         designer_data: designerData
       })
     })
-    return handleResponse<Campaign>(response)
+    
+    console.log('API Response status:', response.status);
+    console.log('API Response headers:', response.headers);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error response:', errorText);
+      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('API Success response:', result);
+    return result;
   } catch (error) {
     console.error('Error creating campaign from designer:', error)
     throw error

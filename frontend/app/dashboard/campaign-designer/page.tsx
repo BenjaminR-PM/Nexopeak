@@ -361,7 +361,7 @@ export default function CampaignDesignerPage() {
   };
 
   const createCampaign = async () => {
-    if (!campaignName || !targetAudience || channels.length === 0) {
+    if (!campaignName || channels.length === 0) {
       setError('Please complete all required fields');
       return;
     }
@@ -370,6 +370,17 @@ export default function CampaignDesignerPage() {
     setError(null);
 
     try {
+      // Build comprehensive audience description
+      const audienceDescription = [
+        `Age: ${audienceAge}`,
+        `Gender: ${audienceGender}`,
+        `Income: ${audienceIncome}`,
+        audienceInterests.length > 0 ? `Interests: ${audienceInterests.join(', ')}` : '',
+        audienceJobTitles.length > 0 ? `Job Titles: ${audienceJobTitles.join(', ')}` : '',
+        audienceIndustries.length > 0 ? `Industries: ${audienceIndustries.join(', ')}` : '',
+        targetAudience ? `Additional: ${targetAudience}` : ''
+      ].filter(Boolean).join(' | ');
+
       const campaignData: CampaignDesignerData = {
         name: campaignName,
         objective: objective as CampaignDesignerData['objective'],
@@ -382,7 +393,7 @@ export default function CampaignDesignerPage() {
         channels: budgetAllocation,
         targeting: {
           geo,
-          audience: targetAudience
+          audience: audienceDescription || 'General audience'
         },
         kpiTarget,
         designScore: designScore.score,
@@ -390,10 +401,14 @@ export default function CampaignDesignerPage() {
         createdAt: new Date().toISOString()
       };
 
+      console.log('Creating campaign with data:', campaignData);
+
       const campaign = await createCampaignFromDesigner(campaignData);
       
-      // Redirect to campaigns page with success message
-      router.push(`/dashboard/campaigns?created=${campaign.id}`);
+      console.log('Campaign created successfully:', campaign);
+      
+      // Redirect to campaigns page without query parameter to avoid issues
+      router.push('/dashboard/campaigns');
     } catch (error) {
       console.error('Error creating campaign:', error);
       setError(error instanceof Error ? error.message : 'Failed to create campaign');
@@ -765,7 +780,7 @@ export default function CampaignDesignerPage() {
                   <Button 
                     variant="contained" 
                     onClick={handleNext}
-                    disabled={!campaignName || !targetAudience}
+                    disabled={!campaignName}
                     sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
                   >
                     Next
@@ -1583,7 +1598,7 @@ export default function CampaignDesignerPage() {
                     variant="contained" 
                     startIcon={isCreating ? undefined : <RocketIcon />}
                     onClick={createCampaign}
-                    disabled={isCreating || !campaignName || !targetAudience || channels.length === 0}
+                      disabled={isCreating || !campaignName || channels.length === 0}
                       sx={{ 
                         bgcolor: '#10b981', 
                         '&:hover': { bgcolor: '#059669' },
