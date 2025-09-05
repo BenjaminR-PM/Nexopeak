@@ -44,6 +44,24 @@ export const useSession = () => {
     }
   }, [])
 
+  // Logout
+  const logout = useCallback(() => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('remember_me')
+    localStorage.removeItem('google_remember_me')
+    
+    setSessionData({
+      access_token: null,
+      refresh_token: null,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false
+    })
+    
+    router.push('/auth/login')
+  }, [router])
+
   // Fetch user data
   const fetchUserData = useCallback(async (token: string) => {
     try {
@@ -68,7 +86,7 @@ export const useSession = () => {
       console.error('Failed to fetch user data:', error)
       logout()
     }
-  }, [])
+  }, [logout])
 
   // Refresh token
   const refreshToken = useCallback(async () => {
@@ -111,7 +129,7 @@ export const useSession = () => {
       logout()
       return false
     }
-  }, [])
+  }, [logout])
 
   // Extend session with activity
   const extendSession = useCallback(async () => {
@@ -212,35 +230,7 @@ export const useSession = () => {
     }
   }, [sessionData.isAuthenticated, extendSession])
 
-  // Check token validity on mount and route changes
-  useEffect(() => {
-    const checkTokenValidity = async () => {
-      const access_token = localStorage.getItem('access_token')
-      if (!access_token) return
-
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-        const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${access_token}`
-          }
-        })
-
-        if (!response.ok) {
-          // Try to refresh token
-          const refreshSuccess = await refreshToken()
-          if (!refreshSuccess) {
-            logout()
-          }
-        }
-      } catch (error) {
-        console.error('Token validation failed:', error)
-        logout()
-      }
-    }
-
-    checkTokenValidity()
-  }, [refreshToken, logout])
+  // Note: Token validation is handled by individual API calls and the refresh interval
 
   return {
     ...sessionData,

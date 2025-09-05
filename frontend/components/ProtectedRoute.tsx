@@ -21,13 +21,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     if (isLoading) return // Wait for session to load
 
-    if (requireAuth && !isAuthenticated) {
-      // User needs to be authenticated but isn't
-      router.push('/auth/login')
-    } else if (!requireAuth && isAuthenticated) {
-      // User is authenticated but shouldn't be on this page (e.g., login page)
-      router.push(redirectTo)
-    }
+    // Use a small delay to prevent rapid redirects
+    const timeoutId = setTimeout(() => {
+      if (requireAuth && !isAuthenticated) {
+        // User needs to be authenticated but isn't
+        router.push('/auth/login')
+      } else if (!requireAuth && isAuthenticated) {
+        // User is authenticated but shouldn't be on this page (e.g., login page)
+        router.push(redirectTo)
+      }
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
   }, [isAuthenticated, isLoading, requireAuth, redirectTo, router])
 
   // Show loading while checking authentication

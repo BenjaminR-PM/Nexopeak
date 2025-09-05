@@ -28,28 +28,7 @@ export default function LoginPage() {
   const [isGoogleReady, setIsGoogleReady] = useState(false)
   const router = useRouter()
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkAuth = async () => {
-      const accessToken = localStorage.getItem('access_token')
-      if (accessToken) {
-        try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-          const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-          })
-          if (response.ok) {
-            router.push('/dashboard')
-          }
-        } catch (error) {
-          console.log('Token verification failed:', error)
-          // Clear invalid token
-          localStorage.removeItem('access_token')
-        }
-      }
-    }
-    checkAuth()
-  }, [router])
+  // Note: Authentication check is handled by RequireNoAuth wrapper
 
   // Initialize Google Sign-In
   useEffect(() => {
@@ -71,7 +50,7 @@ export default function LoginPage() {
       script.src = 'https://accounts.google.com/gsi/client'
       script.async = true
       script.defer = true
-      script.onload = initializeGoogle
+      script.onload = () => initializeGoogle()
       document.head.appendChild(script)
     } else {
       initializeGoogle()
