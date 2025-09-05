@@ -512,7 +512,7 @@ export default function CampaignsPortfolioPage() {
                 Total Budget
               </Typography>
               <Typography variant="h4">
-                {formatCurrency(campaigns.reduce((sum, c) => sum + c.budget.total, 0))}
+                {formatCurrency(campaigns.reduce((sum, c) => sum + getCampaignBudget(c).total, 0))}
               </Typography>
             </CardContent>
           </Card>
