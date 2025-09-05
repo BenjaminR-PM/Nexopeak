@@ -302,7 +302,7 @@ export default function CampaignDesignerPage() {
     'Campaign Basics', 
     'Budget & Timeline',
     'Channels & Targeting',
-    'Review & Launch'
+    'Review & Register'
   ];
 
   const handleTemplateSelect = (templateId: string) => {
@@ -1202,7 +1202,7 @@ export default function CampaignDesignerPage() {
 
             {/* Step 5: Review & Launch */}
             <Step>
-              <StepLabel>Review & Launch</StepLabel>
+              <StepLabel>Review & Register</StepLabel>
               <StepContent>
                 {/* Enhanced Campaign Summary Section */}
                 <Box sx={{ mb: 4 }}>
@@ -1210,7 +1210,7 @@ export default function CampaignDesignerPage() {
                     Campaign Overview
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
-                    Review your campaign configuration and launch when ready
+                    Review your campaign configuration and register when ready
                   </Typography>
                 </Box>
 
@@ -1568,7 +1568,7 @@ export default function CampaignDesignerPage() {
                   </Grid>
                 </Grid>
                 
-                {/* Launch Actions */}
+                {/* Register Actions */}
                 <Box sx={{ 
                   display: 'flex', 
                   justifyContent: 'space-between', 
@@ -1580,7 +1580,7 @@ export default function CampaignDesignerPage() {
                 }}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      Ready to Launch?
+                      Ready to Register?
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6b7280' }}>
                       Your campaign is configured and ready to go live
@@ -1607,7 +1607,7 @@ export default function CampaignDesignerPage() {
                         py: 1.5
                       }}
                   >
-                    {isCreating ? 'Creating Campaign...' : 'Launch Campaign'}
+                    {isCreating ? 'Creating Campaign...' : 'Register Campaign'}
                   </Button>
                   </Box>
                 </Box>
