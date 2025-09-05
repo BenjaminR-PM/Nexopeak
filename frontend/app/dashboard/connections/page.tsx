@@ -177,7 +177,7 @@ export default function ConnectionsPage() {
               ...template,
               id: userConnection.id,
               name: userConnection.name,
-              status: userConnection.status === 'connected' ? 'connected' : 'disconnected',
+              status: (userConnection.status === 'connected' ? 'connected' : 'disconnected') as 'connected' | 'disconnected' | 'error' | 'pending',
               lastSync: userConnection.last_sync ? new Date(userConnection.last_sync).toLocaleDateString() : 'Never',
               nextSync: userConnection.next_sync ? new Date(userConnection.next_sync).toLocaleDateString() : 'Not scheduled',
               external_id: userConnection.external_id,
