@@ -25,35 +25,69 @@ export const dynamic = 'force-dynamic'
 interface Campaign {
   id: string
   name: string
+  description?: string
   status: 'active' | 'paused' | 'draft' | 'completed' | 'archived'
   platform: string
-  type: string
-  budget: {
+  campaign_type: string
+  primary_objective: string
+  total_budget?: number
+  daily_budget?: number
+  currency: string
+  start_date?: string
+  end_date?: string
+  target_locations: string[]
+  target_demographics: any
+  target_interests: string[]
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  org_id: string
+  user_id: string
+  // Legacy fields for backward compatibility with mock data
+  type?: string
+  budget?: {
     total: number
     spent: number
     daily: number
   }
-  performance: {
+  performance?: {
     impressions: number
     clicks: number
     ctr: number
     conversions: number
     roas: number
   }
-  dateRange: {
+  dateRange?: {
     start: string
     end: string
   }
-  lastModified: string
-  createdBy: string
+  lastModified?: string
+  createdBy?: string
 }
 
 const mockCampaigns: Campaign[] = [
   {
     id: '1',
     name: 'Holiday Shopping Campaign',
+    description: 'Holiday shopping campaign for Q4',
     status: 'active',
     platform: 'Google Ads',
+    campaign_type: 'Search',
+    primary_objective: 'ecommerce_sales',
+    total_budget: 5000,
+    daily_budget: 150,
+    currency: 'USD',
+    start_date: '2024-01-15T00:00:00Z',
+    end_date: '2024-02-15T00:00:00Z',
+    target_locations: ['United States', 'Canada'],
+    target_demographics: { age: '25-54', gender: 'all' },
+    target_interests: ['shopping', 'technology'],
+    is_active: true,
+    created_at: '2024-01-15T10:30:00Z',
+    updated_at: '2024-01-20T10:30:00Z',
+    org_id: 'org-1',
+    user_id: 'user-1',
+    // Legacy fields for compatibility
     type: 'Search',
     budget: { total: 5000, spent: 2340, daily: 150 },
     performance: { impressions: 45230, clicks: 1820, ctr: 4.02, conversions: 89, roas: 3.2 },
@@ -64,8 +98,25 @@ const mockCampaigns: Campaign[] = [
   {
     id: '2',
     name: 'Brand Awareness Q1',
+    description: 'Brand awareness campaign for Q1',
     status: 'paused',
     platform: 'Facebook Ads',
+    campaign_type: 'Display',
+    primary_objective: 'awareness',
+    total_budget: 3000,
+    daily_budget: 100,
+    currency: 'USD',
+    start_date: '2024-01-01T00:00:00Z',
+    end_date: '2024-03-31T00:00:00Z',
+    target_locations: ['United States'],
+    target_demographics: { age: '18-65', gender: 'all' },
+    target_interests: ['business', 'marketing'],
+    is_active: false,
+    created_at: '2024-01-01T10:30:00Z',
+    updated_at: '2024-01-18T14:20:00Z',
+    org_id: 'org-1',
+    user_id: 'user-2',
+    // Legacy fields for compatibility
     type: 'Display',
     budget: { total: 3000, spent: 1200, daily: 100 },
     performance: { impressions: 125000, clicks: 890, ctr: 0.71, conversions: 23, roas: 1.8 },
@@ -76,8 +127,25 @@ const mockCampaigns: Campaign[] = [
   {
     id: '3',
     name: 'Product Launch Campaign',
+    description: 'Product launch campaign for new product',
     status: 'draft',
     platform: 'Instagram',
+    campaign_type: 'Social',
+    primary_objective: 'awareness',
+    total_budget: 2500,
+    daily_budget: 80,
+    currency: 'USD',
+    start_date: '2024-02-01T00:00:00Z',
+    end_date: '2024-02-28T00:00:00Z',
+    target_locations: ['United States'],
+    target_demographics: { age: '18-35', gender: 'all' },
+    target_interests: ['lifestyle', 'fashion'],
+    is_active: false,
+    created_at: '2024-01-19T09:15:00Z',
+    updated_at: '2024-01-19T09:15:00Z',
+    org_id: 'org-1',
+    user_id: 'user-3',
+    // Legacy fields for compatibility
     type: 'Social',
     budget: { total: 2500, spent: 0, daily: 80 },
     performance: { impressions: 0, clicks: 0, ctr: 0, conversions: 0, roas: 0 },
@@ -103,6 +171,53 @@ const platformIcons = {
   'Twitter': <TwitterIcon sx={{ color: '#1da1f2' }} />,
   'Email': <EmailIcon sx={{ color: '#34a853' }} />,
   'Website': <WebIcon sx={{ color: '#ff5722' }} />
+}
+
+// Helper functions to handle both backend and mock data structures
+const getCampaignBudget = (campaign: Campaign) => {
+  return {
+    total: campaign.total_budget || campaign.budget?.total || 0,
+    spent: campaign.budget?.spent || 0,
+    daily: campaign.daily_budget || campaign.budget?.daily || 0
+  }
+}
+
+const getCampaignPerformance = (campaign: Campaign) => {
+  return {
+    impressions: campaign.performance?.impressions || 0,
+    clicks: campaign.performance?.clicks || 0,
+    ctr: campaign.performance?.ctr || 0,
+    conversions: campaign.performance?.conversions || 0,
+    roas: campaign.performance?.roas || 0
+  }
+}
+
+const getCampaignType = (campaign: Campaign) => {
+  return campaign.campaign_type || campaign.type || 'Unknown'
+}
+
+const getCampaignCreatedBy = (campaign: Campaign) => {
+  return campaign.createdBy || 'Unknown'
+}
+
+// Utility functions
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('en-US').format(num)
+}
+
+const getPerformanceIcon = (roas: number) => {
+  if (roas >= 3) return <TrendingUpIcon sx={{ color: '#4caf50' }} />
+  if (roas >= 2) return <TrendingUpIcon sx={{ color: '#ff9800' }} />
+  return <TrendingDownIcon sx={{ color: '#f44336' }} />
 }
 
 export default function CampaignsPortfolioPage() {
@@ -211,7 +326,7 @@ export default function CampaignsPortfolioPage() {
       filtered = filtered.filter(campaign =>
         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         campaign.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.type.toLowerCase().includes(searchTerm.toLowerCase())
+        getCampaignType(campaign).toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -567,7 +682,7 @@ export default function CampaignsPortfolioPage() {
                             {campaign.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {campaign.type} • Created by {campaign.createdBy}
+                            {getCampaignType(campaign)} • Created by {getCampaignCreatedBy(campaign)}
                           </Typography>
                         </Box>
                       </Box>
@@ -592,11 +707,11 @@ export default function CampaignsPortfolioPage() {
                     <TableCell>
                       <Box>
                         <Typography variant="body2" fontWeight="bold">
-                          {formatCurrency(campaign.budget.spent)} / {formatCurrency(campaign.budget.total)}
+                          {formatCurrency(getCampaignBudget(campaign).spent)} / {formatCurrency(getCampaignBudget(campaign).total)}
                         </Typography>
                         <LinearProgress
                           variant="determinate"
-                          value={(campaign.budget.spent / campaign.budget.total) * 100}
+                          value={getCampaignBudget(campaign).total > 0 ? (getCampaignBudget(campaign).spent / getCampaignBudget(campaign).total) * 100 : 0}
                           sx={{ mt: 0.5, height: 4 }}
                         />
                       </Box>
@@ -604,18 +719,18 @@ export default function CampaignsPortfolioPage() {
                     <TableCell>
                       <Box>
                         <Typography variant="body2">
-                          {formatNumber(campaign.performance.clicks)} clicks
+                          {formatNumber(getCampaignPerformance(campaign).clicks)} clicks
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          CTR: {campaign.performance.ctr}%
+                          CTR: {getCampaignPerformance(campaign).ctr}%
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {getPerformanceIcon(campaign.performance.roas)}
+                        {getPerformanceIcon(getCampaignPerformance(campaign).roas)}
                         <Typography variant="body2" fontWeight="bold">
-                          {campaign.performance.roas.toFixed(1)}x
+                          {getCampaignPerformance(campaign).roas.toFixed(1)}x
                         </Typography>
                       </Box>
                     </TableCell>
@@ -684,17 +799,17 @@ export default function CampaignsPortfolioPage() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     {platformIcons[campaign.platform as keyof typeof platformIcons]}
                     <Typography variant="body2" color="text.secondary">
-                      {campaign.platform} • {campaign.type}
+                      {campaign.platform} • {getCampaignType(campaign)}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" gutterBottom>
-                      Budget: {formatCurrency(campaign.budget.spent)} / {formatCurrency(campaign.budget.total)}
+                      Budget: {formatCurrency(getCampaignBudget(campaign).spent)} / {formatCurrency(getCampaignBudget(campaign).total)}
                     </Typography>
                     <LinearProgress
                       variant="determinate"
-                      value={(campaign.budget.spent / campaign.budget.total) * 100}
+                      value={getCampaignBudget(campaign).total > 0 ? (getCampaignBudget(campaign).spent / getCampaignBudget(campaign).total) * 100 : 0}
                       sx={{ height: 6, borderRadius: 3 }}
                     />
                   </Box>
@@ -705,7 +820,7 @@ export default function CampaignsPortfolioPage() {
                         Clicks
                       </Typography>
                       <Typography variant="body2" fontWeight="bold">
-                        {formatNumber(campaign.performance.clicks)}
+                        {formatNumber(getCampaignPerformance(campaign).clicks)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
@@ -713,9 +828,9 @@ export default function CampaignsPortfolioPage() {
                         ROAS
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {getPerformanceIcon(campaign.performance.roas)}
+                        {getPerformanceIcon(getCampaignPerformance(campaign).roas)}
                         <Typography variant="body2" fontWeight="bold">
-                          {campaign.performance.roas.toFixed(1)}x
+                          {getCampaignPerformance(campaign).roas.toFixed(1)}x
                         </Typography>
                       </Box>
                     </Grid>
