@@ -91,7 +91,7 @@ export default function CampaignDesignerPage() {
   const [channels, setChannels] = useState(['Search', 'Meta', 'LinkedIn']);
   const [targetAudience, setTargetAudience] = useState('');
   const [kpiTarget, setKpiTarget] = useState(35);
-  
+
   // Enhanced target audience fields
   const [audienceAge, setAudienceAge] = useState('25-54');
   const [audienceGender, setAudienceGender] = useState('all');
@@ -865,11 +865,11 @@ export default function CampaignDesignerPage() {
 
                       {/* Professional Slider */}
                       <Box sx={{ px: 2 }}>
-                        <Slider
-                          value={duration}
-                          min={7}
-                          max={120}
-                          step={1}
+                    <Slider
+                      value={duration}
+                      min={7}
+                      max={120}
+                      step={1}
                           onChange={(_, value) => {
                             const newDuration = value as number;
                             setDuration(newDuration);
@@ -879,7 +879,7 @@ export default function CampaignDesignerPage() {
                               setDailyBudget(newDailyBudget);
                             }
                           }}
-                          valueLabelDisplay="auto"
+                      valueLabelDisplay="auto"
                           sx={{
                             color: '#f97316',
                             height: 8,
@@ -933,7 +933,7 @@ export default function CampaignDesignerPage() {
                               },
                             },
                           }}
-                          marks={[
+                      marks={[
                             { value: 7, label: '1 Week' },
                             { value: 14, label: '2 Weeks' },
                             { value: 30, label: '1 Month' },
@@ -1062,7 +1062,7 @@ export default function CampaignDesignerPage() {
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                               {channel.name}
                             </Typography>
-                            <Chip
+                      <Chip
                               size="small"
                               label={channels.includes(channel.name) ? "Selected" : "Select"}
                               color={channels.includes(channel.name) ? "primary" : "default"}
@@ -1117,7 +1117,7 @@ export default function CampaignDesignerPage() {
                           <Select
                             multiple
                             value={geo}
-                            label="Geographic Targeting"
+                          label="Geographic Targeting"
                             onChange={(e) => setGeo(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
                             renderValue={(selected) => (
                               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -1187,63 +1187,255 @@ export default function CampaignDesignerPage() {
             <Step>
               <StepLabel>Review & Launch</StepLabel>
               <StepContent>
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                  <Grid item xs={12} md={8}>
-                    <Card>
+                {/* Enhanced Campaign Summary Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#374151' }}>
+                    Campaign Overview
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
+                    Review your campaign configuration and launch when ready
+                  </Typography>
+                </Box>
+
+                {/* Main Content Grid */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                  
+                  {/* Left Column - Campaign Summary */}
+                  <Grid item xs={12} lg={8}>
+                    {/* Campaign Header Card */}
+                    <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)', color: 'white' }}>
+                      <CardContent sx={{ p: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                          <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                              {campaignName || 'Untitled Campaign'}
+                            </Typography>
+                            <Typography variant="h6" sx={{ opacity: 0.9, textTransform: 'capitalize' }}>
+                              {objective.replace('_', ' ')} Campaign
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="h3" sx={{ fontWeight: 700 }}>
+                              ${budget.toLocaleString()}
+                            </Typography>
+                            <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                              Total Budget
+                            </Typography>
+                          </Box>
+                        </Box>
+                        
+                        <Grid container spacing={3} sx={{ mt: 2 }}>
+                          <Grid item xs={6} sm={3}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                {duration}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Days
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6} sm={3}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                ${dailyBudget.toLocaleString()}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Daily Budget
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6} sm={3}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                {channels.length}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Channels
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6} sm={3}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                {kpiTarget}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Target {primaryKpi}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+
+                    {/* Detailed Campaign Information */}
+                    <Grid container spacing={3}>
+                      {/* Target Audience */}
+                      <Grid item xs={12} md={6}>
+                        <Card sx={{ height: '100%' }}>
                       <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2 }}>Campaign Summary</Typography>
-                        <List>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Campaign Name" 
-                              secondary={campaignName}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Objective" 
-                              secondary={`${objective.replace('_', ' ')} - Target ${primaryKpi}: ${kpiTarget}`}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Budget & Duration" 
-                              secondary={`$${budget.toLocaleString()} over ${duration} days ($${dailyBudget}/day)`}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Channels" 
-                              secondary={channels.join(', ')}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Target Audience" 
-                              secondary={targetAudience}
-                            />
-                          </ListItem>
-                        </List>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <UsersIcon sx={{ color: '#f97316', mr: 1 }} />
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Target Audience
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                                Demographics
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                Age: {audienceAge} • Gender: {audienceGender} • Income: {audienceIncome}
+                              </Typography>
+                            </Box>
+                            {audienceInterests.length > 0 && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                                  Interests
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {audienceInterests.slice(0, 3).map((interest) => (
+                                    <Chip key={interest} label={interest} size="small" sx={{ bgcolor: '#fff7ed', color: '#f97316' }} />
+                                  ))}
+                                  {audienceInterests.length > 3 && (
+                                    <Chip label={`+${audienceInterests.length - 3} more`} size="small" variant="outlined" />
+                                  )}
+                                </Box>
+                              </Box>
+                            )}
+                            {audienceJobTitles.length > 0 && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                                  Job Titles
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                  {audienceJobTitles.slice(0, 2).join(', ')}
+                                  {audienceJobTitles.length > 2 && ` +${audienceJobTitles.length - 2} more`}
+                                </Typography>
+                              </Box>
+                            )}
+                            {targetAudience && (
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mb: 1 }}>
+                                  Additional Description
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                  {targetAudience}
+                                </Typography>
+                              </Box>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      {/* Geographic Targeting */}
+                      <Grid item xs={12} md={6}>
+                        <Card sx={{ height: '100%' }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <TargetIcon sx={{ color: '#f97316', mr: 1 }} />
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Geographic Targeting
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                              {geo.map((location) => {
+                                const option = geoOptions.find(opt => opt.value === location);
+                                return (
+                                  <Chip 
+                                    key={location} 
+                                    label={option?.label || location} 
+                                    sx={{ bgcolor: '#f0f9ff', color: '#3b82f6' }}
+                                  />
+                                );
+                              })}
+                            </Box>
+                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                              Targeting {geo.length} location{geo.length !== 1 ? 's' : ''} for focused reach
+                            </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                   
-                  <Grid item xs={12} md={4}>
-                    <Card sx={{ bgcolor: '#f0f9ff', mb: 3 }}>
-                      <CardContent sx={{ textAlign: 'center' }}>
-                        <SpeedIcon sx={{ fontSize: 48, color: '#3b82f6', mb: 2 }} />
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#3b82f6', mb: 1 }}>
-                          {designScore.score}/100
+                      {/* Marketing Channels */}
+                      <Grid item xs={12}>
+                        <Card>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                              <SparklesIcon sx={{ color: '#f97316', mr: 1 }} />
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Marketing Channels & Budget Allocation
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
-                          Campaign Design Score
+                            </Box>
+                            <Grid container spacing={2}>
+                              {budgetAllocation.map(({ channel, percentage, amount }) => (
+                                <Grid item xs={12} sm={6} md={4} key={channel}>
+                                  <Box sx={{ 
+                                    p: 3, 
+                                    bgcolor: '#f8fafc', 
+                                    borderRadius: 2, 
+                                    border: '1px solid #e2e8f0',
+                                    textAlign: 'center'
+                                  }}>
+                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#f97316', mb: 1 }}>
+                                      {percentage}%
                         </Typography>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                                      {channel}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      ${amount.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
+                  {/* Right Column - Score, Guidelines & Suggestions */}
+                  <Grid item xs={12} lg={4}>
+                    <Box sx={{ position: 'sticky', top: 20 }}>
+                      
+                      {/* Campaign Score Card */}
+                      <Card sx={{ mb: 3, bgcolor: designScore.score >= 80 ? '#f0f9ff' : designScore.score >= 60 ? '#fffbeb' : '#fef2f2' }}>
+                        <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                          <SpeedIcon sx={{ 
+                            fontSize: 56, 
+                            color: designScore.score >= 80 ? '#3b82f6' : designScore.score >= 60 ? '#f59e0b' : '#ef4444',
+                            mb: 2 
+                          }} />
+                          <Typography variant="h2" sx={{ 
+                            fontWeight: 700, 
+                            color: designScore.score >= 80 ? '#3b82f6' : designScore.score >= 60 ? '#f59e0b' : '#ef4444',
+                            mb: 1 
+                          }}>
+                            {designScore.score}
+                          </Typography>
+                          <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
+                            Campaign Score
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: designScore.score >= 80 ? '#1e40af' : designScore.score >= 60 ? '#92400e' : '#991b1b',
+                            fontWeight: 600,
+                            mb: 3
+                          }}>
+                            {designScore.score >= 80 ? 'Excellent Setup!' : 
+                             designScore.score >= 60 ? 'Good Configuration' : 
+                             'Needs Improvement'}
+                          </Typography>
+                          
+                          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
                         <Button
                           fullWidth
                           variant="contained"
                           startIcon={<CopyIcon />}
                           onClick={generateCampaignPlan}
-                          sx={{ mb: 2, bgcolor: '#3b82f6' }}
+                              sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}
                         >
                           Export Plan
                         </Button>
@@ -1252,129 +1444,155 @@ export default function CampaignDesignerPage() {
                           variant="outlined"
                           startIcon={<EditIcon />}
                           onClick={() => setActiveStep(1)}
+                              sx={{ borderColor: '#3b82f6', color: '#3b82f6' }}
                         >
-                          Edit Campaign
+                              Edit
                         </Button>
+                          </Box>
                       </CardContent>
                     </Card>
 
-                    {/* Scoring Explanation */}
-                    <Card sx={{ bgcolor: '#f8fafc' }}>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                          How We Score Your Campaign
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
-                          Our AI evaluates your campaign across multiple dimensions:
-                        </Typography>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Objective-Channel Alignment (25 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            How well your channels match your campaign objective
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Budget Adequacy (20 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Sufficient budget for meaningful results and proper allocation
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Channel Diversity (15 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Balanced mix of 3-5 channels for risk mitigation
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Audience Targeting (15 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Completeness and specificity of target audience
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Geographic Focus (10 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Focused geographic targeting (1-5 locations)
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • Campaign Duration (10 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Optimal 30-90 day duration for learning and optimization
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
-                            • KPI Target (5 pts)
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
-                            Realistic and measurable KPI target set
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
-
-                    {/* Improvement Suggestions */}
-                    {designScore.feedback.length > 0 && (
-                      <Card sx={{ bgcolor: '#fffbeb', mt: 3 }}>
+                      {/* Scoring Guidelines */}
+                      <Card sx={{ mb: 3, bgcolor: '#f8fafc' }}>
                         <CardContent>
-                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#d97706' }}>
-                            Optimization Suggestions
+                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151' }}>
+                            📊 Scoring Breakdown
                           </Typography>
-                          <List dense>
-                            {designScore.feedback.map((feedback) => (
-                              <ListItem key={feedback} sx={{ py: 0.5, px: 0 }}>
-                                <Typography variant="body2" sx={{ 
-                                  color: feedback.startsWith('✓') ? '#059669' : '#d97706',
-                                  fontSize: '0.875rem'
-                                }}>
-                                  {feedback}
+                          <Box sx={{ space: 1 }}>
+                            {[
+                              { label: 'Channel-Objective Fit', points: '25 pts', desc: 'How well channels match your goal' },
+                              { label: 'Budget Adequacy', points: '20 pts', desc: 'Sufficient budget for results' },
+                              { label: 'Channel Diversity', points: '15 pts', desc: 'Balanced channel mix (3-5)' },
+                              { label: 'Audience Targeting', points: '15 pts', desc: 'Complete audience definition' },
+                              { label: 'Geographic Focus', points: '10 pts', desc: 'Focused location targeting' },
+                              { label: 'Campaign Duration', points: '10 pts', desc: 'Optimal 30-90 day length' },
+                              { label: 'KPI Target', points: '5 pts', desc: 'Realistic target set' }
+                            ].map((item, index) => (
+                              <Box key={index} sx={{ mb: 2, pb: 2, borderBottom: index < 6 ? '1px solid #e2e8f0' : 'none' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                                    {item.label}
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#f97316', fontWeight: 600 }}>
+                                    {item.points}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                  {item.desc}
                                 </Typography>
-                              </ListItem>
+                              </Box>
                             ))}
-                          </List>
-                          {designScore.score < 80 && (
-                            <Box sx={{ mt: 2, p: 2, bgcolor: '#fef3c7', borderRadius: 1 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e', mb: 1 }}>
-                                💡 Quick Wins to Improve Your Score:
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.8rem' }}>
-                                {designScore.score < 60 && '• Increase your budget to at least $5,000 for better results'}
-                                {designScore.score < 70 && audienceInterests.length === 0 && '• Add audience interests for better targeting'}
-                                {designScore.score < 75 && channels.length < 3 && '• Consider adding 1-2 more marketing channels'}
-                                {designScore.score < 80 && duration < 30 && '• Extend campaign duration to 30+ days for optimization'}
-                              </Typography>
-                            </Box>
-                          )}
+                          </Box>
                         </CardContent>
                       </Card>
-                    )}
+
+                      {/* Optimization Suggestions */}
+                      {designScore.feedback.length > 0 && (
+                        <Card sx={{ bgcolor: '#fffbeb', border: '1px solid #fbbf24' }}>
+                          <CardContent>
+                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#d97706' }}>
+                              💡 Optimization Tips
+                            </Typography>
+                            <Box sx={{ space: 1 }}>
+                              {designScore.feedback.map((feedback, index) => (
+                                <Box key={feedback} sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'flex-start', 
+                                  mb: 1.5,
+                                  p: 1.5,
+                                  bgcolor: feedback.startsWith('✓') ? '#f0fdf4' : '#fef3c7',
+                                  borderRadius: 1,
+                                  border: `1px solid ${feedback.startsWith('✓') ? '#bbf7d0' : '#fde68a'}`
+                                }}>
+                                  <Typography variant="body2" sx={{ 
+                                    color: feedback.startsWith('✓') ? '#059669' : '#d97706',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500
+                                  }}>
+                                    {feedback}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                            
+                            {designScore.score < 80 && (
+                              <Box sx={{ mt: 3, p: 3, bgcolor: '#fef3c7', borderRadius: 2, border: '1px solid #fbbf24' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e', mb: 2 }}>
+                                  🚀 Quick Wins to Boost Your Score:
+                                </Typography>
+                                <Box sx={{ space: 1 }}>
+                                  {designScore.score < 60 && (
+                                    <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.875rem', mb: 1 }}>
+                                      • Increase budget to $5,000+ for better performance
+                                    </Typography>
+                                  )}
+                                  {audienceInterests.length === 0 && (
+                                    <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.875rem', mb: 1 }}>
+                                      • Add audience interests for precise targeting
+                                    </Typography>
+                                  )}
+                                  {channels.length < 3 && (
+                                    <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.875rem', mb: 1 }}>
+                                      • Add 1-2 more channels for diversified reach
+                                    </Typography>
+                                  )}
+                                  {duration < 30 && (
+                                    <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.875rem' }}>
+                                      • Extend to 30+ days for full optimization
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </Box>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </Box>
                   </Grid>
                 </Grid>
                 
+                {/* Launch Actions */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  p: 3,
+                  bgcolor: '#f8fafc',
+                  borderRadius: 2,
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Ready to Launch?
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                      Your campaign is configured and ready to go live
+                    </Typography>
+                  </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button onClick={handleBack} disabled={isCreating}>Back</Button>
+                    <Button 
+                      onClick={handleBack} 
+                      disabled={isCreating}
+                      variant="outlined"
+                      sx={{ minWidth: 120 }}
+                    >
+                      Back
+                    </Button>
                   <Button 
                     variant="contained" 
                     startIcon={isCreating ? undefined : <RocketIcon />}
                     onClick={createCampaign}
                     disabled={isCreating || !campaignName || !targetAudience || channels.length === 0}
-                    sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+                      sx={{ 
+                        bgcolor: '#10b981', 
+                        '&:hover': { bgcolor: '#059669' },
+                        minWidth: 160,
+                        py: 1.5
+                      }}
                   >
                     {isCreating ? 'Creating Campaign...' : 'Launch Campaign'}
                   </Button>
+                  </Box>
                 </Box>
               </StepContent>
             </Step>
