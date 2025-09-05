@@ -16,7 +16,8 @@ import {
   Globe,
   Database,
   Bell,
-  Search
+  Search,
+  Palette
 } from 'lucide-react'
 import { RequireAuth } from '@/components/ProtectedRoute'
 import { useSession } from '@/hooks/useSession'
@@ -24,7 +25,7 @@ import { useSession } from '@/hooks/useSession'
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [campaigns, setCampaigns] = useState<any[]>([])
@@ -217,6 +218,14 @@ export default function DashboardLayout({
                         <TrendingUp className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                         Campaign Analyzer
                       </Link>
+
+                      <Link
+                        href="/dashboard/campaign-designer"
+                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      >
+                        <Palette className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                        Campaign Designer
+                      </Link>
                     </div>
                   </div>
 
@@ -283,9 +292,10 @@ export default function DashboardLayout({
 
         {/* Mobile overlay */}
         {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          <button
+            className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden border-0 p-0 cursor-default"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
           />
         )}
       </div>
