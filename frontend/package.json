@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cache": "NEXT_CACHE_HANDLER=filesystem next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "heroku-postbuild": "npm run build"
+    "clean": "rm -rf .next tsconfig.tsbuildinfo .swc .turbo",
+    "heroku-postbuild": "npm run build:cache"
   },
   "dependencies": {
     "@date-io/dayjs": "^3.2.0",

@@ -1,11 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable build caching for faster builds
-  experimental: {
-    // Enable build cache
-    buildCache: true,
-  },
-  
   // Optimize build performance
   swcMinify: true,
   
@@ -20,6 +14,59 @@ const nextConfig = {
   
   // Enable static optimization
   trailingSlash: false,
+  
+  // Optimize caching and performance
+  experimental: {
+    // Enable optimized package imports for faster builds
+    optimizePackageImports: ['@mui/material', '@mui/icons-material', 'lucide-react'],
+    // Enable turbo mode for faster builds (if available)
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
+  
+  // Webpack optimizations for better caching
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Enable persistent caching
+    if (!dev) {
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [__filename],
+        },
+      };
+    }
+    
+    // Optimize bundle splitting for better caching
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks.cacheGroups,
+          mui: {
+            name: 'mui',
+            test: /[\\/]node_modules[\\/]@mui[\\/]/,
+            chunks: 'all',
+            priority: 10,
+          },
+          vendor: {
+            name: 'vendor',
+            test: /[\\/]node_modules[\\/]/,
+            chunks: 'all',
+            priority: 5,
+          },
+        },
+      },
+    };
+    
+    return config;
+  },
   
   // Environment variables
   env: {

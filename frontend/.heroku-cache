@@ -1,0 +1,17 @@
+# Heroku Cache Configuration
+# This file helps Heroku understand what to cache for faster builds
+
+# Cache node_modules
+node_modules/
+
+# Cache Next.js build cache
+.next/cache/
+
+# Cache TypeScript build info
+tsconfig.tsbuildinfo
+
+# Cache SWC compilation cache
+.swc/
+
+# Cache package-lock for faster npm installs
+package-lock.json

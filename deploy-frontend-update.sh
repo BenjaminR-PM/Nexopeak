@@ -83,8 +83,8 @@ deploy_frontend() {
     TEMP_DIR=$(mktemp -d)
     print_status "Creating temporary deployment directory: $TEMP_DIR"
     
-    # Copy frontend files to temp directory, excluding node_modules
-    rsync -av --exclude 'node_modules' frontend/ "$TEMP_DIR/"
+    # Copy frontend files to temp directory, excluding cache and build files
+    rsync -av --exclude 'node_modules' --exclude '.next' --exclude 'tsconfig.tsbuildinfo' --exclude '.swc' --exclude '.turbo' frontend/ "$TEMP_DIR/"
     
     # Navigate to temp directory
     cd "$TEMP_DIR"
@@ -92,7 +92,7 @@ deploy_frontend() {
     # Initialize git in temp directory
     git init
     git add .
-    git commit -m "Deploy updated frontend with user dropdown and profile reorganization"
+    git commit -m "Deploy frontend with caching optimizations - $(date '+%Y-%m-%d %H:%M:%S')"
     
     # Add Heroku remote
     git remote add heroku https://git.heroku.com/$FRONTEND_APP.git
@@ -135,10 +135,12 @@ show_deployment_summary() {
     echo "   Logs: heroku logs --tail -a $FRONTEND_APP"
     echo ""
     echo "🎯 Changes Deployed:"
-    echo "   ✅ User dropdown menu in top navigation"
-    echo "   ✅ Reorganized profile pages with tabs"
-    echo "   ✅ Fixed next.config.js warnings"
-    echo "   ✅ Updated environment variables"
+    echo "   ✅ Campaign Designer with IPPO model"
+    echo "   ✅ Optimized build caching for faster deployments"
+    echo "   ✅ Webpack filesystem caching enabled"
+    echo "   ✅ Bundle splitting for better cache efficiency"
+    echo "   ✅ Heroku build cache optimizations"
+    echo "   ✅ Fixed Next.js configuration warnings"
     echo ""
     echo "Happy testing! 🚀"
 }

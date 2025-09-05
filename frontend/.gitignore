@@ -37,6 +37,17 @@ Thumbs.db
 # Cache
 .cache/
 .parcel-cache/
+.swc/
+.turbo/
+
+# Next.js cache
+.next/cache/
+.next/standalone/
+.next/static/
+.next/types/
+
+# Build cache
+tsconfig.tsbuildinfo
 
 # Temporary files
 .tmp/
