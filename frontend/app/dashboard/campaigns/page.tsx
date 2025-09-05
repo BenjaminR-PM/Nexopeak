@@ -1,23 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   Box, Card, CardContent, Typography, Button, Grid, Chip, Avatar, IconButton,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Alert, TextField, FormControl, InputLabel, Select, MenuItem, 
-  Checkbox, Menu, Tooltip, LinearProgress, Fab
+  TextField, FormControl, InputLabel, Select, MenuItem, 
+  Menu, Tooltip, LinearProgress, Divider, Stack
 } from '@mui/material'
 import {
-  Add as AddIcon, ViewList as ListIcon,
-  ViewModule as GridIcon, Search as SearchIcon, MoreVert as MoreIcon,
+  Add as AddIcon, Search as SearchIcon, MoreVert as MoreIcon,
   PlayArrow as PlayIcon, Pause as PauseIcon, Edit as EditIcon,
-  Delete as DeleteIcon, FileCopy as CopyIcon, Archive as ArchiveIcon,
-  TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon,
-  Remove as RemoveIcon, Analytics as AnalyticsIcon,
-  Campaign as CampaignIcon, Google as GoogleIcon, Facebook as FacebookIcon,
-  Instagram as InstagramIcon, LinkedIn as LinkedInIcon, Twitter as TwitterIcon,
-  Email as EmailIcon, Web as WebIcon, Refresh as RefreshIcon
+  Delete as DeleteIcon, Archive as ArchiveIcon,
+  TrendingUp as TrendingUpIcon, Analytics as AnalyticsIcon, Campaign as CampaignIcon,
+  Refresh as RefreshIcon, Facebook as FacebookIcon, Instagram as InstagramIcon, 
+  LinkedIn as LinkedInIcon, Twitter as TwitterIcon,
+  Google as GoogleIcon, Email as EmailIcon, Web as WebIcon,
+  YouTube as YouTubeIcon, WhatsApp as WhatsAppIcon
 } from '@mui/icons-material'
 
 export const dynamic = 'force-dynamic'
@@ -43,592 +42,301 @@ interface Campaign {
   updated_at: string
   org_id: string
   user_id: string
-  // Legacy fields for backward compatibility with mock data
-  type?: string
-  budget?: {
-    total: number
-    spent: number
-    daily: number
-  }
-  performance?: {
-    impressions: number
-    clicks: number
-    ctr: number
-    conversions: number
-    roas: number
-  }
-  dateRange?: {
-    start: string
-    end: string
-  }
-  lastModified?: string
-  createdBy?: string
 }
 
-
-const statusColors = {
-  active: '#4caf50',
-  paused: '#ff9800',
-  draft: '#2196f3',
-  completed: '#9e9e9e',
-  archived: '#757575'
+const getChannelIcon = (channel: string) => {
+  const channelLower = channel.toLowerCase()
+  const iconProps = { sx: { fontSize: 20 } }
+  
+  if (channelLower.includes('facebook')) return <FacebookIcon {...iconProps} />
+  if (channelLower.includes('instagram')) return <InstagramIcon {...iconProps} />
+  if (channelLower.includes('linkedin')) return <LinkedInIcon {...iconProps} />
+  if (channelLower.includes('twitter') || channelLower.includes('x.com')) return <TwitterIcon {...iconProps} />
+  if (channelLower.includes('google') || channelLower.includes('search')) return <GoogleIcon {...iconProps} />
+  if (channelLower.includes('youtube')) return <YouTubeIcon {...iconProps} />
+  if (channelLower.includes('whatsapp')) return <WhatsAppIcon {...iconProps} />
+  if (channelLower.includes('email')) return <EmailIcon {...iconProps} />
+  return <WebIcon {...iconProps} />
 }
 
-const platformIcons = {
-  'Google Ads': <GoogleIcon sx={{ color: '#4285f4' }} />,
-  'Facebook Ads': <FacebookIcon sx={{ color: '#1877f2' }} />,
-  'Instagram': <InstagramIcon sx={{ color: '#e4405f' }} />,
-  'LinkedIn': <LinkedInIcon sx={{ color: '#0077b5' }} />,
-  'Twitter': <TwitterIcon sx={{ color: '#1da1f2' }} />,
-  'Email': <EmailIcon sx={{ color: '#34a853' }} />,
-  'Website': <WebIcon sx={{ color: '#ff5722' }} />
-}
-
-// Helper functions to handle both backend and mock data structures
-const getCampaignBudget = (campaign: Campaign) => {
-  return {
-    total: campaign.total_budget || campaign.budget?.total || 0,
-    spent: campaign.budget?.spent || 0,
-    daily: campaign.daily_budget || campaign.budget?.daily || 0
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'success'
+    case 'paused': return 'warning'
+    case 'draft': return 'default'
+    case 'completed': return 'info'
+    case 'archived': return 'error'
+    default: return 'default'
   }
 }
 
-const getCampaignPerformance = (campaign: Campaign) => {
-  return {
-    impressions: campaign.performance?.impressions || 0,
-    clicks: campaign.performance?.clicks || 0,
-    ctr: campaign.performance?.ctr || 0,
-    conversions: campaign.performance?.conversions || 0,
-    roas: campaign.performance?.roas || 0
-  }
-}
-
-const getCampaignType = (campaign: Campaign) => {
-  return campaign.campaign_type || campaign.type || 'Unknown'
-}
-
-const getCampaignCreatedBy = (campaign: Campaign) => {
-  return campaign.createdBy || 'Unknown'
-}
-
-// Utility functions
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
 }
 
-const formatNumber = (num: number) => {
-  return new Intl.NumberFormat('en-US').format(num)
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 }
 
-const getPerformanceIcon = (roas: number) => {
-  if (roas >= 3) return <TrendingUpIcon sx={{ color: '#4caf50' }} />
-  if (roas >= 2) return <TrendingUpIcon sx={{ color: '#ff9800' }} />
-  return <TrendingDownIcon sx={{ color: '#f44336' }} />
-}
-
-export default function CampaignsPortfolioPage() {
+export default function CampaignsPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
-  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [platformFilter, setPlatformFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
 
-  // Check for success message from Campaign Designer
+  // Statistics
+  const totalCampaigns = campaigns.length
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length
+  const totalBudget = campaigns.reduce((sum, c) => sum + (c.total_budget || 0), 0)
+  const avgDailyBudget = campaigns.length > 0 
+    ? campaigns.reduce((sum, c) => sum + (c.daily_budget || 0), 0) / campaigns.length 
+    : 0
+
   useEffect(() => {
-    const created = searchParams.get('created')
-    if (created) {
-      setShowSuccessMessage(true)
-      // Remove the parameter from URL without page reload
-      const url = new URL(window.location.href)
-      url.searchParams.delete('created')
-      window.history.replaceState({}, '', url.toString())
-    }
-  }, [searchParams])
-
-  // Load campaigns
-  useEffect(() => {
-    const loadCampaigns = async () => {
-      try {
-        setLoading(true)
-        const token = localStorage.getItem('access_token')
-        
-        if (!token) {
-          // No token, show empty state
-          setCampaigns([])
-          setFilteredCampaigns([])
-          setLoading(false)
-          return
-        }
-
-        try {
-          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-          
-          // Add timeout to prevent hanging
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-          
-          const response = await fetch(`${API_URL}/api/v1/campaigns`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            signal: controller.signal
-          })
-
-          clearTimeout(timeoutId)
-
-          if (response.ok) {
-            const data = await response.json()
-            setCampaigns(data.campaigns || [])
-            setFilteredCampaigns(data.campaigns || [])
-          } else {
-            // API error, show empty state
-            setCampaigns([])
-            setFilteredCampaigns([])
-          }
-        } catch (fetchError) {
-          console.error('Failed to fetch campaigns:', fetchError)
-          // Network error, show empty state
-          setCampaigns([])
-          setFilteredCampaigns([])
-        }
-      } catch (error) {
-        console.error('Failed to load campaigns:', error)
-        setCampaigns([])
-        setFilteredCampaigns([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    // Call the function immediately
     loadCampaigns()
   }, [])
 
-  // Filter campaigns
-  useEffect(() => {
-    let filtered = campaigns
-
-    if (searchTerm) {
-      filtered = filtered.filter(campaign =>
-        campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getCampaignType(campaign).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(campaign => campaign.status === statusFilter)
-    }
-
-    if (platformFilter !== 'all') {
-      filtered = filtered.filter(campaign => campaign.platform === platformFilter)
-    }
-
-    setFilteredCampaigns(filtered)
-  }, [campaigns, searchTerm, statusFilter, platformFilter])
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Campaigns Portfolio Debug:', {
-      loading,
-      campaignsCount: campaigns.length,
-      filteredCount: filteredCampaigns.length,
-      searchTerm,
-      statusFilter,
-      platformFilter
-    })
-  }, [loading, campaigns.length, filteredCampaigns.length, searchTerm, statusFilter, platformFilter])
-
-
-
-  const handleStatusChange = async (campaignId: string, newStatus: Campaign['status']) => {
+  const loadCampaigns = async () => {
     try {
-      // Update local state immediately
-      setCampaigns(prev => prev.map(campaign =>
-        campaign.id === campaignId ? { ...campaign, status: newStatus } : campaign
-      ))
-
-      // TODO: Make API call to update status
-      // const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}/status`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({ status: newStatus })
-      // })
-    } catch (error) {
-      console.error('Failed to update campaign status:', error)
-    }
-  }
-
-  const handleDeleteCampaign = async (campaignId: string) => {
-    try {
-      console.log('🗑️ Starting campaign deletion for ID:', campaignId)
-      
+      setLoading(true)
       const token = localStorage.getItem('access_token')
+      
       if (!token) {
-        console.error('❌ No authentication token found')
-        alert('Please log in to delete campaigns')
+        setCampaigns([])
+        setLoading(false)
         return
       }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-      const deleteUrl = `${API_URL}/api/v1/campaigns/${campaignId}`
       
-      console.log('🌐 API_URL from env:', process.env.NEXT_PUBLIC_API_URL)
-      console.log('🌐 Final API_URL:', API_URL)
-      console.log('🌐 Making DELETE request to:', deleteUrl)
-      console.log('🔑 Using token:', token.substring(0, 20) + '...')
-      
-      // Test connectivity first
-      console.log('🔍 Testing backend connectivity...')
-      try {
-        const healthResponse = await fetch(`${API_URL}/health`, { 
-          method: 'GET',
-          signal: AbortSignal.timeout(10000) // 10 second timeout
-        })
-        console.log('🔍 Health check status:', healthResponse.status)
-        if (!healthResponse.ok) {
-          throw new Error(`Backend health check failed: ${healthResponse.status}`)
-        }
-      } catch (healthError) {
-        console.error('❌ Backend connectivity test failed:', healthError)
-        alert('Cannot connect to backend server. Please check your internet connection.')
-        return
-      }
-      
-      // Add timeout and better error handling
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
+      const response = await fetch(`${API_URL}/api/v1/campaigns/`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
-        signal: controller.signal
       })
 
-      clearTimeout(timeoutId)
-      
-      console.log('📡 Response status:', response.status)
-      console.log('📡 Response ok:', response.ok)
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
-
       if (response.ok) {
-        // Successfully deleted from backend, now update local state
-        setCampaigns(prev => {
-          const newCampaigns = prev.filter(c => c.id !== campaignId)
-          console.log('✅ Campaign deleted successfully. Campaigns before:', prev.length, 'after:', newCampaigns.length)
-          return newCampaigns
-        })
-        alert('Campaign deleted successfully!')
+        const data = await response.json()
+        setCampaigns(data.campaigns || [])
       } else {
-        let errorData = {}
-        try {
-          errorData = await response.json()
-        } catch (jsonError) {
-          console.log('📄 Response is not JSON, getting text...')
-          const textData = await response.text()
-          console.log('📄 Response text:', textData)
-          errorData = { detail: textData || `HTTP ${response.status}` }
-        }
-        
-        console.error('❌ Failed to delete campaign. Status:', response.status, 'Error:', errorData)
-        alert(`Failed to delete campaign: ${(errorData as any).detail || `HTTP ${response.status}`}`)
+        setCampaigns([])
       }
     } catch (error) {
-      console.error('❌ Error deleting campaign:', error)
-      
-      // Better error messages for common issues
-      let errorMessage = 'Unknown error'
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          errorMessage = 'Request timed out. Please check your internet connection.'
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('Load failed')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.'
-        } else if (error.message.includes('CORS')) {
-          errorMessage = 'CORS error. Please contact support.'
-        } else {
-          errorMessage = error.message
-        }
-      }
-      
-      alert(`Error deleting campaign: ${errorMessage}`)
+      console.error('Failed to load campaigns:', error)
+      setCampaigns([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleBulkAction = async (action: string) => {
-    if (selectedCampaigns.length === 0) return
-
-    switch (action) {
-      case 'delete':
-        await handleBulkDelete()
-        break
-      case 'activate':
-        await handleBulkStatusChange('active')
-        break
-      case 'pause':
-        await handleBulkStatusChange('paused')
-        break
-      case 'archive':
-        await handleBulkStatusChange('archived')
-        break
-      default:
-        console.log(`Bulk action: ${action} on campaigns:`, selectedCampaigns)
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        console.error('No authentication token found')
-        return
-      }
-
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
-      
-      // Delete campaigns one by one (could be optimized with a bulk delete endpoint)
-      const deletePromises = selectedCampaigns.map(campaignId =>
-        fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      )
-
-      const results = await Promise.allSettled(deletePromises)
-      
-      // Count successful deletions
-      const successfulDeletes = results.filter(result => 
-        result.status === 'fulfilled' && result.value.ok
-      ).length
-
-      if (successfulDeletes > 0) {
-        // Update local state to remove successfully deleted campaigns
-        setCampaigns(prev => prev.filter(c => !selectedCampaigns.includes(c.id)))
-        setSelectedCampaigns([])
-        console.log(`Successfully deleted ${successfulDeletes} campaigns`)
-      }
-
-      if (successfulDeletes < selectedCampaigns.length) {
-        console.error(`Failed to delete ${selectedCampaigns.length - successfulDeletes} campaigns`)
-      }
-    } catch (error) {
-      console.error('Error in bulk delete:', error)
-    }
-  }
-
-  const handleBulkStatusChange = async (newStatus: Campaign['status']) => {
-    // Update local state immediately for better UX
-    setCampaigns(prev => prev.map(campaign =>
-      selectedCampaigns.includes(campaign.id) 
-        ? { ...campaign, status: newStatus }
-        : campaign
-    ))
-    setSelectedCampaigns([])
-    
-    // TODO: Make API calls to update status in backend
-    console.log(`Bulk status change to ${newStatus} for campaigns:`, selectedCampaigns)
-  }
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, campaignId: string) => {
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, campaign: Campaign) => {
     setAnchorEl(event.currentTarget)
-    setSelectedCampaignId(campaignId)
+    setSelectedCampaign(campaign)
   }
 
   const handleMenuClose = () => {
     setAnchorEl(null)
-    setSelectedCampaignId('')
+    setSelectedCampaign(null)
   }
 
-  const handleCampaignAction = async (action: string) => {
-    console.log('🎯 Campaign action triggered:', action, 'for campaign ID:', selectedCampaignId)
-    
-    const campaign = campaigns.find(c => c.id === selectedCampaignId)
-    if (!campaign) {
-      console.error('❌ Campaign not found for ID:', selectedCampaignId)
-      return
-    }
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
 
-    console.log('📋 Found campaign:', campaign.name)
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      
+      const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
-    switch (action) {
-      case 'edit':
-        router.push(`/dashboard/campaign-designer?edit=${selectedCampaignId}`)
-        break
-      case 'analyze':
-        router.push(`/dashboard/campaign-analyzer?campaign=${selectedCampaignId}`)
-        break
-      case 'duplicate':
-        router.push(`/dashboard/campaign-designer?duplicate=${selectedCampaignId}`)
-        break
-      case 'archive':
-        handleStatusChange(selectedCampaignId, 'archived')
-        break
-      case 'delete':
-        console.log('🗑️ Calling handleDeleteCampaign...')
-        await handleDeleteCampaign(selectedCampaignId)
-        break
-      default:
-        console.log('❓ Unknown action:', action)
+      if (response.ok) {
+        setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+        alert('Campaign deleted successfully!')
+      } else {
+        alert('Failed to delete campaign')
+      }
+    } catch (error) {
+      console.error('Error deleting campaign:', error)
+      alert('Error deleting campaign')
     }
     handleMenuClose()
   }
 
-  const getPerformanceIcon = (roas: number) => {
-    if (roas > 2.5) return <TrendingUpIcon sx={{ color: '#4caf50', fontSize: 16 }} />
-    if (roas < 1.5) return <TrendingDownIcon sx={{ color: '#f44336', fontSize: 16 }} />
-    return <RemoveIcon sx={{ color: '#ff9800', fontSize: 16 }} />
+  const handleStatusChange = async (campaignId: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      
+      const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (response.ok) {
+        setCampaigns(prev => prev.map(c => 
+          c.id === campaignId ? { ...c, status: newStatus as any } : c
+        ))
+        alert(`Campaign ${newStatus} successfully!`)
+      } else {
+        alert('Failed to update campaign status')
+      }
+    } catch (error) {
+      console.error('Error updating campaign status:', error)
+      alert('Error updating campaign status')
+    }
+    handleMenuClose()
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+  const matchesSearchTerm = (campaign: Campaign, term: string) => {
+    const lowerTerm = term.toLowerCase()
+    return campaign.name.toLowerCase().includes(lowerTerm) ||
+           campaign.description?.toLowerCase().includes(lowerTerm) ||
+           campaign.primary_objective.toLowerCase().includes(lowerTerm)
   }
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US').format(num)
-  }
-
-  if (loading && campaigns.length === 0) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>Campaigns Portfolio</Typography>
-        <LinearProgress />
-        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-          Loading campaigns...
-        </Typography>
-      </Box>
-    )
-  }
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = !searchTerm || matchesSearchTerm(campaign, searchTerm)
+    const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <Alert 
-          severity="success" 
-          onClose={() => setShowSuccessMessage(false)}
-          sx={{ mb: 3 }}
-        >
-          🎉 Campaign created successfully! Your new campaign is now in your portfolio.
-        </Alert>
-      )}
-
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Campaigns Portfolio
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage and monitor all your marketing campaigns
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => router.push('/dashboard/campaign-designer')}
-          sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
-        >
-          Create Campaign
-        </Button>
+    <Box>
+      {/* Page Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+          Campaign Management
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
+          Monitor and manage your marketing campaigns across all channels
+        </Typography>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Statistics Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Total Campaigns
-              </Typography>
-              <Typography variant="h4">
-                {campaigns.length}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                    {totalCampaigns}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                    Total Campaigns
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#e3f2fd', color: '#1976d2' }}>
+                  <CampaignIcon />
+                </Avatar>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Active Campaigns
-              </Typography>
-              <Typography variant="h4" sx={{ color: '#4caf50' }}>
-                {campaigns.filter(c => c.status === 'active').length}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                    {activeCampaigns}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                    Active Campaigns
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#e8f5e8', color: '#2e7d32' }}>
+                  <PlayIcon />
+                </Avatar>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Total Budget
-              </Typography>
-              <Typography variant="h4">
-                {formatCurrency(campaigns.reduce((sum, c) => sum + getCampaignBudget(c).total, 0))}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#f57c00' }}>
+                    {formatCurrency(totalBudget)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                    Total Budget
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#fff3e0', color: '#f57c00' }}>
+                  <TrendingUpIcon />
+                </Avatar>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Total Conversions
-              </Typography>
-              <Typography variant="h4">
-                {formatNumber(campaigns.reduce((sum, c) => sum + getCampaignPerformance(c).conversions, 0))}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#7b1fa2' }}>
+                    {formatCurrency(avgDailyBudget)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                    Avg Daily Budget
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#f3e5f5', color: '#7b1fa2' }}>
+                  <AnalyticsIcon />
+                </Avatar>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Filters and Controls */}
+      {/* Controls */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Search */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <TextField
               placeholder="Search campaigns..."
+              variant="outlined"
+              size="small"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
               InputProps={{
-                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                startAdornment: <SearchIcon sx={{ color: '#6b7280', mr: 1 }} />
               }}
               sx={{ minWidth: 250 }}
             />
-
-            {/* Status Filter */}
-            <FormControl size="small" sx={{ minWidth: 120 }}>
+            
+            <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Status</InputLabel>
               <Select
                 value={statusFilter}
@@ -644,321 +352,174 @@ export default function CampaignsPortfolioPage() {
               </Select>
             </FormControl>
 
-            {/* Platform Filter */}
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Platform</InputLabel>
-              <Select
-                value={platformFilter}
-                label="Platform"
-                onChange={(e) => setPlatformFilter(e.target.value)}
-              >
-                <MenuItem value="all">All Platforms</MenuItem>
-                <MenuItem value="Google Ads">Google Ads</MenuItem>
-                <MenuItem value="Facebook Ads">Facebook Ads</MenuItem>
-                <MenuItem value="Instagram">Instagram</MenuItem>
-                <MenuItem value="LinkedIn">LinkedIn</MenuItem>
-                <MenuItem value="Email">Email</MenuItem>
-              </Select>
-            </FormControl>
-
             <Box sx={{ flexGrow: 1 }} />
-
-            {/* Bulk Actions */}
-            {selectedCampaigns.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  size="small"
-                  onClick={() => handleBulkAction('activate')}
-                  startIcon={<PlayIcon />}
-                >
-                  Activate ({selectedCampaigns.length})
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => handleBulkAction('pause')}
-                  startIcon={<PauseIcon />}
-                >
-                  Pause ({selectedCampaigns.length})
-                </Button>
-              </Box>
-            )}
-
-            {/* View Mode Toggle */}
-            <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              <IconButton
-                size="small"
-                onClick={() => setViewMode('list')}
-                sx={{ bgcolor: viewMode === 'list' ? 'primary.main' : 'transparent', color: viewMode === 'list' ? 'white' : 'inherit' }}
-              >
-                <ListIcon />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => setViewMode('grid')}
-                sx={{ bgcolor: viewMode === 'grid' ? 'primary.main' : 'transparent', color: viewMode === 'grid' ? 'white' : 'inherit' }}
-              >
-                <GridIcon />
-              </IconButton>
-            </Box>
-
-            <IconButton onClick={() => window.location.reload()}>
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Empty State */}
-      {filteredCampaigns.length === 0 && !loading ? (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <CardContent>
-            <CampaignIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>
-              No Campaigns Found
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {campaigns.length === 0 
-                ? "You haven't created any campaigns yet. Get started by creating your first campaign!"
-                : "No campaigns match your current filters. Try adjusting your search criteria."
-              }
-            </Typography>
+            
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={loadCampaigns}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => router.push('/dashboard/campaign-designer')}
-              sx={{ mr: 2 }}
+              sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
             >
               Create Campaign
             </Button>
-            {campaigns.length > 0 && (
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setSearchTerm('')
-                  setStatusFilter('all')
-                  setPlatformFilter('all')
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
+          </Box>
+        </CardContent>
+      </Card>
 
-      {/* Campaigns List/Grid */}
-      {filteredCampaigns.length > 0 && viewMode === 'list' ? (
-        <Card>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      indeterminate={selectedCampaigns.length > 0 && selectedCampaigns.length < filteredCampaigns.length}
-                      checked={filteredCampaigns.length > 0 && selectedCampaigns.length === filteredCampaigns.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCampaigns(filteredCampaigns.map(c => c.id))
-                        } else {
-                          setSelectedCampaigns([])
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>Campaign</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Platform</TableCell>
-                  <TableCell>Budget</TableCell>
-                  <TableCell>Performance</TableCell>
-                  <TableCell>ROAS</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredCampaigns.map((campaign) => (
-                  <TableRow key={campaign.id} hover>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedCampaigns.includes(campaign.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedCampaigns(prev => [...prev, campaign.id])
-                          } else {
-                            setSelectedCampaigns(prev => prev.filter(id => id !== campaign.id))
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: statusColors[campaign.status] }}>
-                          <CampaignIcon />
-                        </Avatar>
+      {/* Campaigns Table */}
+      <Card>
+        <CardContent sx={{ p: 0 }}>
+          {loading ? (
+            <Box sx={{ p: 3 }}>
+              <LinearProgress />
+              <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: '#6b7280' }}>
+                Loading campaigns...
+              </Typography>
+            </Box>
+          ) : filteredCampaigns.length === 0 ? (
+            <Box sx={{ p: 6, textAlign: 'center' }}>
+              <CampaignIcon sx={{ fontSize: 64, color: '#9ca3af', mb: 2 }} />
+              <Typography variant="h6" sx={{ mb: 1, color: '#374151' }}>
+                {campaigns.length === 0 ? 'No campaigns yet' : 'No campaigns match your filters'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
+                {campaigns.length === 0 
+                  ? 'Create your first campaign to get started with marketing automation'
+                  : 'Try adjusting your search or filter criteria'}
+              </Typography>
+              {campaigns.length === 0 && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => router.push('/dashboard/campaign-designer')}
+                  sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+                >
+                  Create Your First Campaign
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#f9fafb' }}>
+                    <TableCell sx={{ fontWeight: 600 }}>Campaign</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Channels</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Objective</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Budget</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredCampaigns.map((campaign) => (
+                    <TableRow key={campaign.id} hover>
+                      <TableCell>
                         <Box>
-                          <Typography variant="subtitle2" fontWeight="bold">
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
                             {campaign.name}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {getCampaignType(campaign)} • Created by {getCampaignCreatedBy(campaign)}
-                          </Typography>
+                          {campaign.description && (
+                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                              {campaign.description.length > 60 
+                                ? campaign.description.substring(0, 60) + '...'
+                                : campaign.description}
+                            </Typography>
+                          )}
                         </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={campaign.status.toUpperCase()}
-                        size="small"
-                        sx={{
-                          bgcolor: statusColors[campaign.status],
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {platformIcons[campaign.platform as keyof typeof platformIcons]}
-                        <Typography variant="body2">{campaign.platform}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight="bold">
-                          {formatCurrency(getCampaignBudget(campaign).spent)} / {formatCurrency(getCampaignBudget(campaign).total)}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={getCampaignBudget(campaign).total > 0 ? (getCampaignBudget(campaign).spent / getCampaignBudget(campaign).total) * 100 : 0}
-                          sx={{ mt: 0.5, height: 4 }}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5}>
+                          {campaign.platform && (
+                            <Tooltip title={campaign.platform}>
+                              <Avatar sx={{ width: 24, height: 24, bgcolor: '#f3f4f6' }}>
+                                {getChannelIcon(campaign.platform)}
+                              </Avatar>
+                            </Tooltip>
+                          )}
+                          {/* Add more channels based on campaign data */}
+                        </Stack>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Chip
+                          label={campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                          color={getStatusColor(campaign.status) as any}
+                          size="small"
+                          variant="outlined"
                         />
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
+                      </TableCell>
+                      
+                      <TableCell>
                         <Typography variant="body2">
-                          {formatNumber(getCampaignPerformance(campaign).clicks)} clicks
+                          {campaign.primary_objective}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          CTR: {getCampaignPerformance(campaign).ctr}%
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Box>
+                          {campaign.total_budget && (
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {formatCurrency(campaign.total_budget, campaign.currency)}
+                            </Typography>
+                          )}
+                          {campaign.daily_budget && (
+                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                              {formatCurrency(campaign.daily_budget, campaign.currency)}/day
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Box>
+                          {campaign.start_date && (
+                            <Typography variant="body2">
+                              {formatDate(campaign.start_date)}
+                            </Typography>
+                          )}
+                          {campaign.end_date && (
+                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                              to {formatDate(campaign.end_date)}
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          {formatDate(campaign.created_at)}
                         </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {getPerformanceIcon(getCampaignPerformance(campaign).roas)}
-                        <Typography variant="body2" fontWeight="bold">
-                          {getCampaignPerformance(campaign).roas.toFixed(1)}x
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title={campaign.status === 'active' ? 'Pause' : 'Activate'}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleStatusChange(
-                              campaign.id,
-                              campaign.status === 'active' ? 'paused' : 'active'
-                            )}
-                          >
-                            {campaign.status === 'active' ? <PauseIcon /> : <PlayIcon />}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="More actions">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuClick(e, campaign.id)}
-                          >
-                            <MoreIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
-      ) : filteredCampaigns.length > 0 ? (
-        <Grid container spacing={3}>
-          {filteredCampaigns.map((campaign) => (
-            <Grid item xs={12} sm={6} md={4} key={campaign.id}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar sx={{ bgcolor: statusColors[campaign.status], width: 32, height: 32 }}>
-                        <CampaignIcon fontSize="small" />
-                      </Avatar>
-                      <Chip
-                        label={campaign.status.toUpperCase()}
-                        size="small"
-                        sx={{
-                          bgcolor: statusColors[campaign.status],
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuClick(e, campaign.id)}
-                    >
-                      <MoreIcon />
-                    </IconButton>
-                  </Box>
-
-                  <Typography variant="h6" gutterBottom>
-                    {campaign.name}
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    {platformIcons[campaign.platform as keyof typeof platformIcons]}
-                    <Typography variant="body2" color="text.secondary">
-                      {campaign.platform} • {getCampaignType(campaign)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" gutterBottom>
-                      Budget: {formatCurrency(getCampaignBudget(campaign).spent)} / {formatCurrency(getCampaignBudget(campaign).total)}
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={getCampaignBudget(campaign).total > 0 ? (getCampaignBudget(campaign).spent / getCampaignBudget(campaign).total) * 100 : 0}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">
-                        Clicks
-                      </Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {formatNumber(getCampaignPerformance(campaign).clicks)}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">
-                        ROAS
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {getPerformanceIcon(getCampaignPerformance(campaign).roas)}
-                        <Typography variant="body2" fontWeight="bold">
-                          {getCampaignPerformance(campaign).roas.toFixed(1)}x
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      ) : null}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuClick(e, campaign)}
+                        >
+                          <MoreIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Action Menu */}
       <Menu
@@ -966,70 +527,40 @@ export default function CampaignsPortfolioPage() {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => handleCampaignAction('edit')}>
-          <EditIcon sx={{ mr: 1 }} />
-          Edit Campaign
+        <MenuItem onClick={() => selectedCampaign && handleStatusChange(selectedCampaign.id, 'active')}>
+          <PlayIcon sx={{ mr: 1, fontSize: 20 }} />
+          Activate
         </MenuItem>
-        <MenuItem onClick={() => handleCampaignAction('analyze')}>
-          <AnalyticsIcon sx={{ mr: 1 }} />
-          Analyze Performance
+        <MenuItem onClick={() => selectedCampaign && handleStatusChange(selectedCampaign.id, 'paused')}>
+          <PauseIcon sx={{ mr: 1, fontSize: 20 }} />
+          Pause
         </MenuItem>
-        <MenuItem onClick={() => handleCampaignAction('duplicate')}>
-          <CopyIcon sx={{ mr: 1 }} />
-          Duplicate Campaign
+        <Divider />
+        <MenuItem onClick={() => console.log('Edit campaign:', selectedCampaign?.id)}>
+          <EditIcon sx={{ mr: 1, fontSize: 20 }} />
+          Edit
         </MenuItem>
-        <MenuItem onClick={() => handleCampaignAction('archive')}>
-          <ArchiveIcon sx={{ mr: 1 }} />
-          Archive Campaign
+        <MenuItem onClick={() => console.log('Duplicate campaign:', selectedCampaign?.id)}>
+          <CampaignIcon sx={{ mr: 1, fontSize: 20 }} />
+          Duplicate
         </MenuItem>
-        <MenuItem onClick={() => handleCampaignAction('delete')} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          Delete Campaign
+        <MenuItem onClick={() => console.log('View analytics:', selectedCampaign?.id)}>
+          <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} />
+          Analytics
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => selectedCampaign && handleStatusChange(selectedCampaign.id, 'archived')}>
+          <ArchiveIcon sx={{ mr: 1, fontSize: 20 }} />
+          Archive
+        </MenuItem>
+        <MenuItem 
+          onClick={() => selectedCampaign && handleDeleteCampaign(selectedCampaign.id)}
+          sx={{ color: 'error.main' }}
+        >
+          <DeleteIcon sx={{ mr: 1, fontSize: 20 }} />
+          Delete
         </MenuItem>
       </Menu>
-
-      {/* Empty State */}
-      {filteredCampaigns.length === 0 && (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <CardContent>
-            <CampaignIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              No campaigns found
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {campaigns.length === 0
-                ? "Get started by creating your first marketing campaign"
-                : "Try adjusting your filters to see more campaigns"
-              }
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/dashboard/campaign-designer')}
-              sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
-            >
-              Create Your First Campaign
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Floating Action Button for Mobile */}
-      <Fab
-        color="primary"
-        aria-label="add campaign"
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: { xs: 'flex', md: 'none' },
-          bgcolor: '#f97316',
-          '&:hover': { bgcolor: '#ea580c' }
-        }}
-        onClick={() => router.push('/dashboard/campaign-designer')}
-      >
-        <AddIcon />
-      </Fab>
     </Box>
   )
 }
