@@ -14,7 +14,8 @@ import {
 import {
   AutoAwesome as SparklesIcon, Lightbulb as LightbulbIcon,
   Speed as SpeedIcon, ExpandMore as ExpandMoreIcon,
-  ContentCopy as CopyIcon, Rocket as RocketIcon, Edit as EditIcon
+  ContentCopy as CopyIcon, Rocket as RocketIcon, Edit as EditIcon,
+  People as UsersIcon, TrackChanges as TargetIcon
 } from '@mui/icons-material';
 
 export const dynamic = 'force-dynamic';
