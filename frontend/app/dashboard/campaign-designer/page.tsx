@@ -1,73 +1,167 @@
 'use client'
 
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  Box, Card, CardContent, Typography, Button, Grid, Chip, 
-  TextField, Tabs, Tab, Select, MenuItem, FormControl, InputLabel,
-  Slider, Tooltip, Divider,
-  Paper, List, ListItem, ListItemText
+  Box, Card, CardContent, Typography, Button, Grid, Chip,
+  TextField, FormControl, InputLabel, Select, MenuItem, Slider,
+  Stepper, Step, StepLabel, StepContent, LinearProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  List, ListItem, ListItemText,
+  Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 import {
-  Settings as SettingsIcon, Rocket as RocketIcon, Speed as GaugeIcon,
-  Layers as LayersIcon, GpsFixed as TargetIcon, AutoFixHigh as WandIcon,
-  PlayArrow as PlayIcon, BarChart as BarChartIcon, TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon, PauseCircle as PauseCircleIcon, ContentCopy as CopyIcon
+  AutoAwesome as SparklesIcon, Lightbulb as LightbulbIcon,
+  Speed as SpeedIcon, ExpandMore as ExpandMoreIcon,
+  ContentCopy as CopyIcon, Rocket as RocketIcon, Edit as EditIcon
 } from '@mui/icons-material';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-interface TabPanelProps {
-  readonly children?: React.ReactNode;
-  readonly index: number;
-  readonly value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`campaign-tabpanel-${index}`}
-      aria-labelledby={`campaign-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+// Campaign Templates
+const campaignTemplates = [
+  {
+    id: 'lead-gen-b2b',
+    name: 'B2B Lead Generation',
+    description: 'Optimized for generating high-quality B2B leads with multi-touch attribution',
+    objective: 'lead_gen',
+    primaryKpi: 'CPL',
+    channels: ['Search', 'LinkedIn', 'Meta'],
+    budget: 15000,
+    duration: 42,
+    icon: '🎯',
+    color: '#3b82f6'
+  },
+  {
+    id: 'ecommerce-sales',
+    name: 'E-commerce Sales',
+    description: 'Drive online sales with performance-focused channel mix and retargeting',
+    objective: 'ecommerce_sales',
+    primaryKpi: 'ROAS',
+    channels: ['Search', 'Meta', 'YouTube', 'Performance Max'],
+    budget: 25000,
+    duration: 30,
+    icon: '🛒',
+    color: '#10b981'
+  },
+  {
+    id: 'brand-awareness',
+    name: 'Brand Awareness',
+    description: 'Build brand recognition and reach with video-first creative strategy',
+    objective: 'awareness',
+    primaryKpi: 'Reach',
+    channels: ['YouTube', 'Meta', 'Display', 'TikTok'],
+    budget: 20000,
+    duration: 60,
+    icon: '📢',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'app-installs',
+    name: 'Mobile App Growth',
+    description: 'Drive app downloads and user acquisition across mobile-first channels',
+    objective: 'app_installs',
+    primaryKpi: 'CPA',
+    channels: ['Meta', 'TikTok', 'YouTube', 'Search'],
+    budget: 18000,
+    duration: 35,
+    icon: '📱',
+    color: '#f59e0b'
+  }
+];
 
 export default function CampaignDesignerPage() {
-  const [objective, setObjective] = useState("lead_gen");
-  const [primaryKpi, setPrimaryKpi] = useState("CPL");
+  const router = useRouter();
+  const [activeStep, setActiveStep] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Campaign Configuration State
+  const [campaignName, setCampaignName] = useState('');
+  const [objective, setObjective] = useState('lead_gen');
+  const [primaryKpi, setPrimaryKpi] = useState('CPL');
   const [budget, setBudget] = useState(15000);
-  const [dailyMin, setDailyMin] = useState(300);
-  const [flightDays, setFlightDays] = useState(42);
-  const [geo, setGeo] = useState("CA-ON, CA-BC");
-  const [retargetDays, setRetargetDays] = useState(30);
-  const [channels, setChannels] = useState(["Search","Meta","LinkedIn","YouTube"]);
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [icpNotes, setIcpNotes] = useState("PMs & GC owners, 25–54; high intent in ON & BC; ACV $3600; margin 80%");
+  const [dailyBudget, setDailyBudget] = useState(500);
+  const [duration, setDuration] = useState(42);
+  const [geo, setGeo] = useState(['CA-ON', 'CA-BC']);
+  const [channels, setChannels] = useState(['Search', 'Meta', 'LinkedIn']);
+  const [targetAudience, setTargetAudience] = useState('');
+  const [kpiTarget, setKpiTarget] = useState(35);
 
-  const score = useMemo(() => {
-    // toy derived score to make the UI feel alive
-    const intentBoost = objective === "lead_gen" && channels.includes("Search") ? 1.15 : 1;
-    const reachBoost = channels.includes("YouTube") ? 1.05 : 1;
-    const durationBoost = Math.min(1 + (flightDays/90)*0.2, 1.2);
-    const pacingPenalty = dailyMin * flightDays > budget ? 0.85 : 1;
-    return Math.round(68 * intentBoost * reachBoost * durationBoost * pacingPenalty);
-  }, [objective, channels, flightDays, dailyMin, budget]);
+  // Real-time calculations
+  const designScore = useMemo(() => {
+    let score = 50;
+    
+    // Objective-channel alignment
+    if (objective === 'lead_gen' && channels.includes('Search')) score += 15;
+    if (objective === 'ecommerce_sales' && channels.includes('Performance Max')) score += 15;
+    if (objective === 'awareness' && channels.includes('YouTube')) score += 15;
+    
+    // Budget adequacy
+    if (budget >= 10000) score += 10;
+    if (dailyBudget * duration <= budget) score += 10;
+    
+    // Channel diversity
+    if (channels.length >= 3) score += 10;
+    if (channels.length <= 5) score += 5;
+    
+    return Math.min(100, Math.max(0, score));
+  }, [objective, channels, budget, dailyBudget, duration]);
 
-  const budgetSplit = useMemo(() => {
-    // simple proportional suggestion (demo only)
-    const weights: Record<string, number> = {Search: 0.45, Meta: 0.25, LinkedIn: 0.2, YouTube: 0.1};
-    const active = channels.filter(c => weights[c]);
-    const sum = active.reduce((s,c) => s + weights[c], 0);
-    return active.map(c => ({channel: c, pct: Math.round((weights[c]/sum)*100)}));
-  }, [channels]);
+  const budgetAllocation = useMemo(() => {
+    const weights: Record<string, number> = {
+      'Search': objective === 'lead_gen' ? 0.4 : 0.3,
+      'Meta': 0.25,
+      'LinkedIn': objective === 'lead_gen' ? 0.2 : 0.15,
+      'YouTube': objective === 'awareness' ? 0.3 : 0.15,
+      'Performance Max': objective === 'ecommerce_sales' ? 0.3 : 0.1,
+      'TikTok': 0.1,
+      'Display': 0.1,
+      'Email': 0.05,
+      'SMS': 0.05
+    };
+    
+    const activeChannels = channels.filter(c => weights[c]);
+    const totalWeight = activeChannels.reduce((sum, c) => sum + weights[c], 0);
+    
+    return activeChannels.map(channel => ({
+      channel,
+      percentage: Math.round((weights[channel] / totalWeight) * 100),
+      amount: Math.round((weights[channel] / totalWeight) * budget)
+    }));
+  }, [channels, objective, budget]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
+  const steps = [
+    'Choose Starting Point',
+    'Campaign Basics', 
+    'Budget & Timeline',
+    'Channels & Targeting',
+    'Review & Launch'
+  ];
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = campaignTemplates.find(t => t.id === templateId);
+    if (template) {
+      setSelectedTemplate(templateId);
+      setObjective(template.objective);
+      setPrimaryKpi(template.primaryKpi);
+      setChannels(template.channels);
+      setBudget(template.budget);
+      setDuration(template.duration);
+      setDailyBudget(Math.round(template.budget / template.duration));
+      setCampaignName(template.name);
+    }
+    setShowTemplateDialog(false);
+    setActiveStep(1);
+  };
+
+  const handleNext = () => {
+    setActiveStep((prevStep) => prevStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
   };
 
   const toggleChannel = (channel: string) => {
@@ -78,448 +172,539 @@ export default function CampaignDesignerPage() {
     );
   };
 
-  const generateActivationJSON = () => {
-    return JSON.stringify({
+  const generateCampaignPlan = () => {
+    const plan = {
+      name: campaignName,
       objective,
-      kpi: { primary: primaryKpi },
-      budget_split: budgetSplit.map(b => ({channel: b.channel, pct: b.pct})),
-      flight_days: flightDays,
-      geo,
-      channels,
-      icp_notes: icpNotes,
-      retargeting_window: retargetDays
-    }, null, 2);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateActivationJSON());
+      primaryKpi,
+      budget: {
+        total: budget,
+        daily: dailyBudget,
+        duration: duration
+      },
+      channels: budgetAllocation,
+      targeting: {
+        geo,
+        audience: targetAudience
+      },
+      kpiTarget,
+      designScore,
+      createdAt: new Date().toISOString()
+    };
+    
+    navigator.clipboard.writeText(JSON.stringify(plan, null, 2));
+    // Could also save to backend here
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', p: 3 }}>
-      <Box sx={{ maxWidth: '1400px', mx: 'auto' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box>
-            <Typography variant="h3" component="h1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-              Nexopeak <Typography component="span" sx={{ color: 'text.secondary' }}>Campaign Designer</Typography>
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Turn inputs → optimized plan → activation JSON
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button variant="outlined" startIcon={<SettingsIcon />} sx={{ borderRadius: 3 }}>
-              Settings
-            </Button>
-            <Button variant="contained" startIcon={<RocketIcon />} sx={{ borderRadius: 3 }}>
-              Generate Plan
-            </Button>
-          </Box>
+    <Box>
+      {/* Page Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+          Campaign Designer
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#6b7280', mb: 3 }}>
+          Create optimized marketing campaigns with AI-powered recommendations
+          {selectedTemplate && ` (Using ${selectedTemplate} template)`}
+        </Typography>
+        
+        {/* Progress Indicator */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <LinearProgress 
+            variant="determinate" 
+            value={(activeStep / (steps.length - 1)) * 100} 
+            sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
+          />
+          <Typography variant="body2" sx={{ color: '#6b7280', minWidth: 'fit-content' }}>
+            Step {activeStep + 1} of {steps.length}
+          </Typography>
         </Box>
-
-        {/* KPI Strip */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">Design Score</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <GaugeIcon />
-                  <Typography variant="h4" fontWeight="bold">{score}/100</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">Budget</Typography>
-                <Typography variant="h4" fontWeight="bold">${budget.toLocaleString()}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">Flight</Typography>
-                <Typography variant="h4" fontWeight="bold">{flightDays} days</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">Channels</Typography>
-                <Typography variant="h4" fontWeight="bold">{channels.length}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Tabs */}
-        <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-          <Tabs 
-            value={selectedTab} 
-            onChange={handleTabChange} 
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab icon={<LayersIcon />} label="Inputs" />
-            <Tab icon={<TargetIcon />} label="Plan" />
-            <Tab icon={<WandIcon />} label="Optimizer" />
-            <Tab icon={<PlayIcon />} label="Experiments" />
-            <Tab icon={<BarChartIcon />} label="Scorecard" />
-            <Tab icon={<TrendingUpIcon />} label="Tracking" />
-          </Tabs>
-
-          {/* INPUTS TAB */}
-          <TabPanel value={selectedTab} index={0}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} lg={8}>
-                <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
-                        <FormControl fullWidth>
-                          <InputLabel>Objective</InputLabel>
-                          <Select
-                            value={objective}
-                            label="Objective"
-                            onChange={(e) => setObjective(e.target.value)}
-                          >
-                            <MenuItem value="lead_gen">Lead Gen</MenuItem>
-                            <MenuItem value="ecommerce_sales">E‑commerce Sales</MenuItem>
-                            <MenuItem value="app_installs">App Installs</MenuItem>
-                            <MenuItem value="awareness">Awareness</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <FormControl fullWidth>
-                          <InputLabel>Primary KPI</InputLabel>
-                          <Select
-                            value={primaryKpi}
-                            label="Primary KPI"
-                            onChange={(e) => setPrimaryKpi(e.target.value)}
-                          >
-                            <MenuItem value="CPL">CPL</MenuItem>
-                            <MenuItem value="CPA">CPA</MenuItem>
-                            <MenuItem value="ROAS">ROAS</MenuItem>
-                            <MenuItem value="CTR">CTR</MenuItem>
-                            <MenuItem value="Reach">Reach</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Total Budget"
-                          type="number"
-                          value={budget}
-                          onChange={(e) => setBudget(parseInt(e.target.value || "0"))}
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Daily Min Spend"
-                          type="number"
-                          value={dailyMin}
-                          onChange={(e) => setDailyMin(parseInt(e.target.value || "0"))}
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography gutterBottom>Flight Length (days)</Typography>
-                        <Slider
-                          value={flightDays}
-                          min={7}
-                          max={120}
-                          step={1}
-                          onChange={(_, value) => setFlightDays(value as number)}
-                          valueLabelDisplay="auto"
-                        />
-                        <Typography variant="body2" color="text.secondary">{flightDays} days</Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Geo"
-                          value={geo}
-                          onChange={(e) => setGeo(e.target.value)}
-                          placeholder="CA-ON, CA-BC"
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <Typography gutterBottom>Channels</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {["Search","Performance Max","Meta","LinkedIn","TikTok","YouTube","Display","Email","SMS"].map(channel => {
-                            const active = channels.includes(channel);
-                            return (
-                              <Chip
-                                key={channel}
-                                label={channel}
-                                onClick={() => toggleChannel(channel)}
-                                color={active ? "primary" : "default"}
-                                variant={active ? "filled" : "outlined"}
-                                sx={{ cursor: 'pointer' }}
-                              />
-                            );
-                          })}
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography gutterBottom>Retargeting Window (days)</Typography>
-                        <Slider
-                          value={retargetDays}
-                          min={7}
-                          max={180}
-                          step={1}
-                          onChange={(_, value) => setRetargetDays(value as number)}
-                          valueLabelDisplay="auto"
-                        />
-                        <Typography variant="body2" color="text.secondary">{retargetDays} days</Typography>
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="ICP / Notes"
-                          multiline
-                          rows={3}
-                          value={icpNotes}
-                          onChange={(e) => setIcpNotes(e.target.value)}
-                          placeholder="e.g., PMs & GC owners, 25–54; high intent in ON & BC; ACV $3600; margin 80%"
-                        />
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} lg={4}>
-                <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h6" fontWeight="bold">Suggested Split</Typography>
-                      <Tooltip title="Demo logic based on IPPO priors">
-                        <WarningIcon color="warning" />
-                      </Tooltip>
-                    </Box>
-                    <Divider sx={{ my: 2 }} />
-                    <List dense>
-                      {budgetSplit.map(b => (
-                        <ListItem key={b.channel} sx={{ px: 0 }}>
-                          <ListItemText primary={b.channel} />
-                          <Typography fontWeight="bold">{b.pct}%</Typography>
-                        </ListItem>
-                      ))}
-                    </List>
-                    <Divider sx={{ my: 2 }} />
-                    <Button fullWidth variant="contained" startIcon={<WandIcon />} sx={{ borderRadius: 3 }}>
-                      Recalculate
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </TabPanel>
-
-          {/* PLAN TAB */}
-          <TabPanel value={selectedTab} index={1}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} lg={8}>
-                <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>Campaign Blueprint</Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
-                        <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>Audiences</Typography>
-                          <List dense>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Search – Nonbrand (core keywords)" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Search – Brand" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary={`Meta – Retarget ${retargetDays}d`} /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="LinkedIn – Prospecting (PM/Construction interests)" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="YouTube – Awareness (15s)" /></ListItem>
-                          </List>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>Creatives</Typography>
-                          <List dense>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="RSA v1/v2 (Search)" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Video 15s – Value Prop A" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Carousel – Case Study" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Static – Comparison chart" /></ListItem>
-                          </List>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>Budget & Pacing</Typography>
-                          <List dense>
-                            {budgetSplit.map(b => (
-                              <ListItem key={b.channel} sx={{ px: 0 }}>
-                                <ListItemText primary={`${b.channel}: ${b.pct}% of total`} />
-                              </ListItem>
-                            ))}
-                            <ListItem sx={{ px: 0 }}><ListItemText primary={`Daily min: $${dailyMin}`} /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary={`Flight: ${flightDays} days`} /></ListItem>
-                          </List>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>Decision Rules</Typography>
-                          <List dense>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Pause: CPL > 1.5× target + ≥50 clicks" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Scale: CPL < 0.8× target + ≥10 conv" /></ListItem>
-                            <ListItem sx={{ px: 0 }}><ListItemText primary="Min learning: ≥3k impressions" /></ListItem>
-                          </List>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} lg={4}>
-                <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>Activation JSON</Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.900', color: 'white', borderRadius: 2, mb: 2 }}>
-                      <Typography variant="body2" component="pre" sx={{ fontSize: '0.75rem', lineHeight: 1.5, overflow: 'auto' }}>
-                        {generateActivationJSON()}
-                      </Typography>
-                    </Paper>
-                    <Button 
-                      fullWidth 
-                      variant="contained" 
-                      startIcon={<CopyIcon />} 
-                      sx={{ borderRadius: 3 }}
-                      onClick={copyToClipboard}
-                    >
-                      Copy JSON
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </TabPanel>
-
-          {/* OPTIMIZER TAB */}
-          <TabPanel value={selectedTab} index={2}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <Typography variant="h6" fontWeight="bold">Budget Optimizer (Demo)</Typography>
-                  <Chip label="Greedy Allocation" variant="outlined" sx={{ borderRadius: 3 }} />
-                </Box>
-                <Grid container spacing={3}>
-                  {budgetSplit.map(b => (
-                    <Grid item xs={12} md={3} key={b.channel}>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                        <Typography variant="body2" color="text.secondary">{b.channel}</Typography>
-                        <Typography variant="h4" fontWeight="bold">{b.pct}%</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Saturation: {(40 + b.pct/2)}%
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-                <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-                  <Button variant="contained" startIcon={<PlayIcon />} sx={{ borderRadius: 3 }}>
-                    Run
-                  </Button>
-                  <Button variant="outlined" startIcon={<PauseCircleIcon />} sx={{ borderRadius: 3 }}>
-                    Reset
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </TabPanel>
-
-          {/* EXPERIMENTS TAB */}
-          <TabPanel value={selectedTab} index={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>Experiment Grid</Typography>
-                <Grid container spacing={3}>
-                  {["Search_Nonbrand", "Meta_Retarget_30d", "LinkedIn_Prospecting"].map(tactic => (
-                    <Grid item xs={12} md={4} key={tactic}>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{tactic}</Typography>
-                        <List dense>
-                          <ListItem sx={{ px: 0 }}><ListItemText primary="Creative A vs B" /></ListItem>
-                          <ListItem sx={{ px: 0 }}><ListItemText primary="Bid Strategy 1 vs 2" /></ListItem>
-                          <ListItem sx={{ px: 0 }}><ListItemText primary="Audience Variant X" /></ListItem>
-                        </List>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </TabPanel>
-
-          {/* SCORECARD TAB */}
-          <TabPanel value={selectedTab} index={4}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>Weekly Scorecard (Mock)</Typography>
-                <Grid container spacing={1} sx={{ mb: 2 }}>
-                  <Grid item xs={2}><Typography variant="subtitle2" fontWeight="bold">Tactic</Typography></Grid>
-                  <Grid item xs={2}><Typography variant="subtitle2" fontWeight="bold">Spend</Typography></Grid>
-                  <Grid item xs={2}><Typography variant="subtitle2" fontWeight="bold">Clicks</Typography></Grid>
-                  <Grid item xs={2}><Typography variant="subtitle2" fontWeight="bold">Leads</Typography></Grid>
-                  <Grid item xs={2}><Typography variant="subtitle2" fontWeight="bold">CPL</Typography></Grid>
-                </Grid>
-                {budgetSplit.map(b => (
-                  <Grid container spacing={1} key={b.channel} sx={{ mb: 1 }}>
-                    <Grid item xs={2}><Typography variant="body2">{b.channel}</Typography></Grid>
-                    <Grid item xs={2}><Typography variant="body2">${Math.round((budget*b.pct/100)/4).toLocaleString()}</Typography></Grid>
-                    <Grid item xs={2}><Typography variant="body2">{Math.round(500*b.pct/25)}</Typography></Grid>
-                    <Grid item xs={2}><Typography variant="body2">{Math.round(20*b.pct/25)}</Typography></Grid>
-                    <Grid item xs={2}><Typography variant="body2">${Math.max(20, 90 - b.pct)}</Typography></Grid>
-                  </Grid>
-                ))}
-              </CardContent>
-            </Card>
-          </TabPanel>
-
-          {/* TRACKING TAB */}
-          <TabPanel value={selectedTab} index={5}>
-            <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>Tracking & UTMs</Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>UTM Template</Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.900', color: 'white', borderRadius: 2 }}>
-                        <Typography variant="body2" component="pre" sx={{ fontSize: '0.75rem', lineHeight: 1.5, overflow: 'auto' }}>
-                          {"utm_source={{src}}&utm_medium={{med}}&utm_campaign={{cmp}}&utm_content={{crt}}&utm_term={{term}}"}
-                        </Typography>
-                      </Paper>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>Events</Typography>
-                      <List dense>
-                        <ListItem sx={{ px: 0 }}><ListItemText primary="view_content" /></ListItem>
-                        <ListItem sx={{ px: 0 }}><ListItemText primary="lead_form_start" /></ListItem>
-                        <ListItem sx={{ px: 0 }}><ListItemText primary="qualified_lead" /></ListItem>
-                      </List>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </TabPanel>
-        </Paper>
       </Box>
+
+      {/* Design Score Card */}
+      {activeStep > 0 && (() => {
+        const getScoreColor = () => {
+          if (designScore >= 80) return '#3b82f6';
+          if (designScore >= 60) return '#f59e0b';
+          return '#ef4444';
+        };
+        
+        const getScoreBgColor = () => {
+          if (designScore >= 80) return '#f0f9ff';
+          if (designScore >= 60) return '#fffbeb';
+          return '#fef2f2';
+        };
+        
+        const getScoreMessage = () => {
+          if (designScore >= 80) return 'Excellent campaign setup!';
+          if (designScore >= 60) return 'Good setup, consider optimizations';
+          return 'Needs improvement for better performance';
+        };
+        
+        return (
+          <Card sx={{ mb: 4, bgcolor: getScoreBgColor() }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <SpeedIcon sx={{ color: getScoreColor() }} />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Design Score: {designScore}/100
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                      {getScoreMessage()}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: getScoreColor() }}>
+                    ${budget.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                    Total Budget
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Main Stepper */}
+      <Card>
+        <CardContent>
+          <Stepper activeStep={activeStep} orientation="vertical">
+            
+            {/* Step 1: Choose Starting Point */}
+            <Step>
+              <StepLabel>Choose Your Starting Point</StepLabel>
+              <StepContent>
+                <Typography variant="body1" sx={{ mb: 3, color: '#6b7280' }}>
+                  Start with a proven template or build from scratch with AI guidance
+                </Typography>
+                
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  <Grid item xs={12} md={6}>
+                    <Card 
+                      sx={{ 
+                        cursor: 'pointer', 
+                        border: '2px solid transparent',
+                        '&:hover': { borderColor: '#f97316' },
+                        height: '100%'
+                      }}
+                      onClick={() => setShowTemplateDialog(true)}
+                    >
+                      <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                        <LightbulbIcon sx={{ fontSize: 48, color: '#f97316', mb: 2 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          Use Template
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          Start with proven campaign templates optimized for your industry and goals
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <Card 
+                      sx={{ 
+                        cursor: 'pointer', 
+                        border: '2px solid transparent',
+                        '&:hover': { borderColor: '#f97316' },
+                        height: '100%'
+                      }}
+                      onClick={() => setActiveStep(1)}
+                    >
+                      <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                        <SparklesIcon sx={{ fontSize: 48, color: '#f97316', mb: 2 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          Build from Scratch
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          Create a custom campaign with AI-powered recommendations and optimization
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </StepContent>
+            </Step>
+
+            {/* Step 2: Campaign Basics */}
+            <Step>
+              <StepLabel>Campaign Basics</StepLabel>
+              <StepContent>
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Campaign Name"
+                      value={campaignName}
+                      onChange={(e) => setCampaignName(e.target.value)}
+                      placeholder="e.g., Q1 Lead Generation Campaign"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Campaign Objective</InputLabel>
+                      <Select
+                        value={objective}
+                        label="Campaign Objective"
+                        onChange={(e) => setObjective(e.target.value)}
+                      >
+                        <MenuItem value="lead_gen">Lead Generation</MenuItem>
+                        <MenuItem value="ecommerce_sales">E-commerce Sales</MenuItem>
+                        <MenuItem value="app_installs">App Installs</MenuItem>
+                        <MenuItem value="awareness">Brand Awareness</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Primary KPI</InputLabel>
+                      <Select
+                        value={primaryKpi}
+                        label="Primary KPI"
+                        onChange={(e) => setPrimaryKpi(e.target.value)}
+                      >
+                        <MenuItem value="CPL">Cost Per Lead (CPL)</MenuItem>
+                        <MenuItem value="CPA">Cost Per Acquisition (CPA)</MenuItem>
+                        <MenuItem value="ROAS">Return on Ad Spend (ROAS)</MenuItem>
+                        <MenuItem value="CTR">Click-Through Rate (CTR)</MenuItem>
+                        <MenuItem value="Reach">Reach & Impressions</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Target Audience Description"
+                      value={targetAudience}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      placeholder="e.g., B2B decision makers, 25-54, interested in project management software"
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleNext}
+                    disabled={!campaignName || !targetAudience}
+                    sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </StepContent>
+            </Step>
+
+            {/* Step 3: Budget & Timeline */}
+            <Step>
+              <StepLabel>Budget & Timeline</StepLabel>
+              <StepContent>
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Total Budget"
+                      type="number"
+                      value={budget}
+                      onChange={(e) => setBudget(parseInt(e.target.value) || 0)}
+                      InputProps={{ startAdornment: '$' }}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Daily Budget"
+                      type="number"
+                      value={dailyBudget}
+                      onChange={(e) => setDailyBudget(parseInt(e.target.value) || 0)}
+                      InputProps={{ startAdornment: '$' }}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Typography gutterBottom>Campaign Duration: {duration} days</Typography>
+                    <Slider
+                      value={duration}
+                      min={7}
+                      max={120}
+                      step={1}
+                      onChange={(_, value) => setDuration(value as number)}
+                      valueLabelDisplay="auto"
+                      marks={[
+                        { value: 7, label: '1 week' },
+                        { value: 30, label: '1 month' },
+                        { value: 60, label: '2 months' },
+                        { value: 90, label: '3 months' }
+                      ]}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label={`Target ${primaryKpi}`}
+                      type="number"
+                      value={kpiTarget}
+                      onChange={(e) => setKpiTarget(parseInt(e.target.value) || 0)}
+                      helperText={`Target ${primaryKpi} you want to achieve`}
+                    />
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleNext}
+                    sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </StepContent>
+            </Step>
+
+            {/* Step 4: Channels & Targeting */}
+            <Step>
+              <StepLabel>Channels & Targeting</StepLabel>
+              <StepContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>Select Marketing Channels</Typography>
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  {['Search', 'Meta', 'LinkedIn', 'YouTube', 'Performance Max', 'TikTok', 'Display', 'Email', 'SMS'].map(channel => (
+                    <Grid item key={channel}>
+                      <Chip
+                        label={channel}
+                        onClick={() => toggleChannel(channel)}
+                        color={channels.includes(channel) ? "primary" : "default"}
+                        variant={channels.includes(channel) ? "filled" : "outlined"}
+                        sx={{ cursor: 'pointer' }}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+
+                {/* Budget Allocation Preview */}
+                {channels.length > 0 && (
+                  <Card sx={{ mb: 3, bgcolor: '#f8fafc' }}>
+                    <CardContent>
+                      <Typography variant="h6" sx={{ mb: 2 }}>Recommended Budget Allocation</Typography>
+                      <Grid container spacing={2}>
+                        {budgetAllocation.map(({ channel, percentage, amount }) => (
+                          <Grid item xs={12} sm={6} md={4} key={channel}>
+                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'white', borderRadius: 2 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f97316' }}>
+                                {percentage}%
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                                {channel}
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                ${amount.toLocaleString()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Advanced Settings */}
+                <Accordion expanded={showAdvanced} onChange={() => setShowAdvanced(!showAdvanced)}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>Advanced Targeting Options</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Geographic Targeting"
+                          value={geo.join(', ')}
+                          onChange={(e) => setGeo(e.target.value.split(', '))}
+                          placeholder="CA-ON, CA-BC, US-CA"
+                        />
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+                
+                <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleNext}
+                    disabled={channels.length === 0}
+                    sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
+                  >
+                    Review Campaign
+                  </Button>
+                </Box>
+              </StepContent>
+            </Step>
+
+            {/* Step 5: Review & Launch */}
+            <Step>
+              <StepLabel>Review & Launch</StepLabel>
+              <StepContent>
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  <Grid item xs={12} md={8}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Campaign Summary</Typography>
+                        <List>
+                          <ListItem>
+                            <ListItemText 
+                              primary="Campaign Name" 
+                              secondary={campaignName}
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemText 
+                              primary="Objective" 
+                              secondary={`${objective.replace('_', ' ')} - Target ${primaryKpi}: ${kpiTarget}`}
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemText 
+                              primary="Budget & Duration" 
+                              secondary={`$${budget.toLocaleString()} over ${duration} days ($${dailyBudget}/day)`}
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemText 
+                              primary="Channels" 
+                              secondary={channels.join(', ')}
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemText 
+                              primary="Target Audience" 
+                              secondary={targetAudience}
+                            />
+                          </ListItem>
+                        </List>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={4}>
+                    <Card sx={{ bgcolor: '#f0f9ff' }}>
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <SpeedIcon sx={{ fontSize: 48, color: '#3b82f6', mb: 2 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#3b82f6', mb: 1 }}>
+                          {designScore}/100
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
+                          Campaign Design Score
+                        </Typography>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<CopyIcon />}
+                          onClick={generateCampaignPlan}
+                          sx={{ mb: 2, bgcolor: '#3b82f6' }}
+                        >
+                          Export Plan
+                        </Button>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => setActiveStep(1)}
+                        >
+                          Edit Campaign
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button 
+                    variant="contained" 
+                    startIcon={<RocketIcon />}
+                    onClick={() => router.push('/dashboard/campaigns')}
+                    sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+                  >
+                    Launch Campaign
+                  </Button>
+                </Box>
+              </StepContent>
+            </Step>
+          </Stepper>
+        </CardContent>
+      </Card>
+
+      {/* Template Selection Dialog */}
+      <Dialog 
+        open={showTemplateDialog} 
+        onClose={() => setShowTemplateDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Choose a Campaign Template</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {campaignTemplates.map(template => (
+              <Grid item xs={12} sm={6} key={template.id}>
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    border: '2px solid transparent',
+                    '&:hover': { borderColor: template.color },
+                    height: '100%'
+                  }}
+                  onClick={() => handleTemplateSelect(template.id)}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h4" sx={{ mr: 2 }}>{template.icon}</Typography>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {template.name}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          ${template.budget.toLocaleString()} • {template.duration} days
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                      {template.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {template.channels.map(channel => (
+                        <Chip 
+                          key={channel} 
+                          label={channel} 
+                          size="small" 
+                          sx={{ bgcolor: `${template.color}20`, color: template.color }}
+                        />
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
