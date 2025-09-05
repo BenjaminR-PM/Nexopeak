@@ -275,9 +275,114 @@ export default function CampaignsPortfolioPage() {
     }
   }
 
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} on campaigns:`, selectedCampaigns)
-    // TODO: Implement bulk actions
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        console.error('No authentication token found')
+        return
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      
+      const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        // Successfully deleted from backend, now update local state
+        setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+        console.log('Campaign deleted successfully')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to delete campaign:', errorData)
+        // You could show a toast notification here
+      }
+    } catch (error) {
+      console.error('Error deleting campaign:', error)
+      // You could show a toast notification here
+    }
+  }
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedCampaigns.length === 0) return
+
+    switch (action) {
+      case 'delete':
+        await handleBulkDelete()
+        break
+      case 'activate':
+        await handleBulkStatusChange('active')
+        break
+      case 'pause':
+        await handleBulkStatusChange('paused')
+        break
+      case 'archive':
+        await handleBulkStatusChange('archived')
+        break
+      default:
+        console.log(`Bulk action: ${action} on campaigns:`, selectedCampaigns)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        console.error('No authentication token found')
+        return
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      
+      // Delete campaigns one by one (could be optimized with a bulk delete endpoint)
+      const deletePromises = selectedCampaigns.map(campaignId =>
+        fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      )
+
+      const results = await Promise.allSettled(deletePromises)
+      
+      // Count successful deletions
+      const successfulDeletes = results.filter(result => 
+        result.status === 'fulfilled' && result.value.ok
+      ).length
+
+      if (successfulDeletes > 0) {
+        // Update local state to remove successfully deleted campaigns
+        setCampaigns(prev => prev.filter(c => !selectedCampaigns.includes(c.id)))
+        setSelectedCampaigns([])
+        console.log(`Successfully deleted ${successfulDeletes} campaigns`)
+      }
+
+      if (successfulDeletes < selectedCampaigns.length) {
+        console.error(`Failed to delete ${selectedCampaigns.length - successfulDeletes} campaigns`)
+      }
+    } catch (error) {
+      console.error('Error in bulk delete:', error)
+    }
+  }
+
+  const handleBulkStatusChange = async (newStatus: Campaign['status']) => {
+    // Update local state immediately for better UX
+    setCampaigns(prev => prev.map(campaign =>
+      selectedCampaigns.includes(campaign.id) 
+        ? { ...campaign, status: newStatus }
+        : campaign
+    ))
+    setSelectedCampaigns([])
+    
+    // TODO: Make API calls to update status in backend
+    console.log(`Bulk status change to ${newStatus} for campaigns:`, selectedCampaigns)
   }
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, campaignId: string) => {
@@ -290,7 +395,7 @@ export default function CampaignsPortfolioPage() {
     setSelectedCampaignId('')
   }
 
-  const handleCampaignAction = (action: string) => {
+  const handleCampaignAction = async (action: string) => {
     const campaign = campaigns.find(c => c.id === selectedCampaignId)
     if (!campaign) return
 
@@ -308,7 +413,7 @@ export default function CampaignsPortfolioPage() {
         handleStatusChange(selectedCampaignId, 'archived')
         break
       case 'delete':
-        setCampaigns(prev => prev.filter(c => c.id !== selectedCampaignId))
+        await handleDeleteCampaign(selectedCampaignId)
         break
     }
     handleMenuClose()
