@@ -524,7 +524,7 @@ export default function CampaignsPortfolioPage() {
                 Total Conversions
               </Typography>
               <Typography variant="h4">
-                {formatNumber(campaigns.reduce((sum, c) => sum + c.performance.conversions, 0))}
+                {formatNumber(campaigns.reduce((sum, c) => sum + getCampaignPerformance(c).conversions, 0))}
               </Typography>
             </CardContent>
           </Card>
