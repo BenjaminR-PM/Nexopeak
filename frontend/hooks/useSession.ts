@@ -166,24 +166,6 @@ export const useSession = () => {
     }
   }, [])
 
-  // Logout
-  const logout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('remember_me')
-    localStorage.removeItem('google_remember_me')
-    
-    setSessionData({
-      access_token: null,
-      refresh_token: null,
-      user: null,
-      isAuthenticated: false,
-      isLoading: false
-    })
-    
-    router.push('/auth/login')
-  }, [router])
-
   // Auto-refresh token logic
   useEffect(() => {
     if (!sessionData.refresh_token) return
