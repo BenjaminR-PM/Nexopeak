@@ -351,7 +351,7 @@ export default function CampaignsPortfolioPage() {
         }
         
         console.error('❌ Failed to delete campaign. Status:', response.status, 'Error:', errorData)
-        alert(`Failed to delete campaign: ${errorData.detail || `HTTP ${response.status}`}`)
+        alert(`Failed to delete campaign: ${(errorData as any).detail || `HTTP ${response.status}`}`)
       }
     } catch (error) {
       console.error('❌ Error deleting campaign:', error)
