@@ -192,7 +192,7 @@ export default function CampaignDesignerPage() {
       },
       kpiTarget,
       designScore,
-      selectedTemplate,
+      selectedTemplate: selectedTemplate || undefined,
       createdAt: new Date().toISOString()
     };
     
@@ -225,7 +225,7 @@ export default function CampaignDesignerPage() {
         },
         kpiTarget,
         designScore,
-        selectedTemplate,
+        selectedTemplate: selectedTemplate || undefined,
         createdAt: new Date().toISOString()
       };
 
