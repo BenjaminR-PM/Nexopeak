@@ -23,7 +23,7 @@ class CampaignAnalyzerService:
     def __init__(self, db: Session):
         self.db = db
     
-    def create_campaign(self, campaign_data: CampaignCreate, user_id: UUID, org_id: UUID) -> Campaign:
+    def create_campaign(self, campaign_data: CampaignCreate, user_id: UUID, org_id: str) -> Campaign:
         """Create a new campaign"""
         campaign = Campaign(
             **campaign_data.dict(),
@@ -35,7 +35,7 @@ class CampaignAnalyzerService:
         self.db.refresh(campaign)
         return campaign
     
-    def get_campaign(self, campaign_id: UUID, org_id: UUID) -> Optional[Campaign]:
+    def get_campaign(self, campaign_id: UUID, org_id: str) -> Optional[Campaign]:
         """Get a campaign by ID"""
         return self.db.query(Campaign).filter(
             and_(Campaign.id == campaign_id, Campaign.org_id == org_id)
@@ -43,7 +43,7 @@ class CampaignAnalyzerService:
     
     def get_campaigns(
         self, 
-        org_id: UUID, 
+        org_id: str, 
         user_id: Optional[UUID] = None,
         status: Optional[str] = None,
         campaign_type: Optional[str] = None,
@@ -71,7 +71,7 @@ class CampaignAnalyzerService:
         self, 
         campaign_id: UUID, 
         campaign_data: CampaignUpdate, 
-        org_id: UUID
+        org_id: str
     ) -> Optional[Campaign]:
         """Update a campaign"""
         campaign = self.get_campaign(campaign_id, org_id)
@@ -86,7 +86,7 @@ class CampaignAnalyzerService:
         self.db.refresh(campaign)
         return campaign
     
-    def delete_campaign(self, campaign_id: UUID, org_id: UUID) -> bool:
+    def delete_campaign(self, campaign_id: UUID, org_id: str) -> bool:
         """Delete a campaign"""
         campaign = self.get_campaign(campaign_id, org_id)
         if not campaign:
@@ -100,7 +100,7 @@ class CampaignAnalyzerService:
         self,
         questionnaire: CampaignQuestionnaire,
         user_id: UUID,
-        org_id: UUID
+        org_id: str
     ) -> Campaign:
         """Create a campaign from questionnaire data"""
         
@@ -143,7 +143,7 @@ class CampaignAnalyzerService:
         self,
         designer_data,  # CampaignDesignerData type
         user_id: UUID,
-        org_id: UUID
+        org_id: str
     ) -> Campaign:
         """Create a campaign from Campaign Designer wizard data"""
         
@@ -200,7 +200,7 @@ class CampaignAnalyzerService:
         self,
         campaign_id: UUID,
         user_id: UUID,
-        org_id: UUID,
+        org_id: str,
         force_reanalysis: bool = False
     ) -> CampaignAnalysis:
         """Start campaign analysis process"""
@@ -243,7 +243,7 @@ class CampaignAnalyzerService:
     def get_campaign_analysis(
         self,
         campaign_id: UUID,
-        org_id: UUID
+        org_id: str
     ) -> Optional[CampaignAnalysis]:
         """Get the latest analysis for a campaign"""
         return self.db.query(CampaignAnalysis).filter(
