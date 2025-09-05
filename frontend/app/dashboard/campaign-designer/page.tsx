@@ -8,8 +8,8 @@ import {
   Paper, List, ListItem, ListItemText
 } from '@mui/material';
 import {
-  Settings as SettingsIcon, Rocket as RocketIcon, Gauge as GaugeIcon,
-  Layers as LayersIcon, Target as TargetIcon, AutoFixHigh as WandIcon,
+  Settings as SettingsIcon, Rocket as RocketIcon, Speed as GaugeIcon,
+  Layers as LayersIcon, GpsFixed as TargetIcon, AutoFixHigh as WandIcon,
   PlayArrow as PlayIcon, BarChart as BarChartIcon, TrendingUp as TrendingUpIcon,
   Warning as WarningIcon, PauseCircle as PauseCircleIcon, ContentCopy as CopyIcon
 } from '@mui/icons-material';
