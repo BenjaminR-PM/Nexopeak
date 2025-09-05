@@ -244,6 +244,24 @@ class CampaignAnalysisResponse(BaseModel):
     campaign: Campaign
 
 
+# Campaign Designer schemas
+class CampaignDesignerData(BaseModel):
+    """Schema for Campaign Designer wizard data"""
+    name: str = Field(..., description="Campaign name")
+    objective: str = Field(..., description="Campaign objective: lead_gen, ecommerce_sales, app_installs, awareness")
+    primaryKpi: str = Field(..., description="Primary KPI: CPL, CPA, ROAS, CTR, Reach")
+    budget: Dict[str, Any] = Field(..., description="Budget information with total, daily, duration")
+    channels: List[Dict[str, Any]] = Field(..., description="Channel allocation with percentages and amounts")
+    targeting: Dict[str, Any] = Field(..., description="Targeting information including geo and audience")
+    kpiTarget: float = Field(..., description="Target KPI value")
+    designScore: int = Field(..., description="Campaign design score 0-100")
+    selectedTemplate: Optional[str] = Field(None, description="Template ID if used")
+    createdAt: str = Field(..., description="Creation timestamp")
+
+class CampaignDesignerCreate(BaseModel):
+    """Schema for creating a campaign from Campaign Designer"""
+    designer_data: CampaignDesignerData
+
 # Request schemas for analysis
 class StartAnalysisRequest(BaseModel):
     questionnaire_data: CampaignQuestionnaire

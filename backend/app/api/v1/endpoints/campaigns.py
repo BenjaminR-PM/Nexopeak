@@ -13,7 +13,8 @@ from app.services.logging_service import get_logging_service, LogModule
 from app.schemas.campaign import (
     Campaign, CampaignCreate, CampaignUpdate, CampaignListResponse,
     CampaignQuestionnaire, StartAnalysisRequest,
-    CampaignAnalysis, CampaignAnalysisResponse
+    CampaignAnalysis, CampaignAnalysisResponse,
+    CampaignDesignerCreate, CampaignDesignerData
 )
 
 router = APIRouter()
@@ -139,6 +140,19 @@ async def create_campaign_from_questionnaire(
     service = CampaignAnalyzerService(db)
     campaign = service.create_campaign_from_questionnaire(
         questionnaire, current_user.id, current_user.org_id
+    )
+    return campaign
+
+@router.post("/from-designer", response_model=Campaign)
+async def create_campaign_from_designer(
+    designer_request: CampaignDesignerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a campaign from Campaign Designer wizard data"""
+    service = CampaignAnalyzerService(db)
+    campaign = service.create_campaign_from_designer(
+        designer_request.designer_data, current_user.id, current_user.org_id
     )
     return campaign
 

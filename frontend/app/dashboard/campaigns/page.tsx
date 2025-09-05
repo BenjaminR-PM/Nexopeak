@@ -1,21 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Box, Card, CardContent, Typography, Button, Grid, Chip, Avatar, IconButton,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
-  Tabs, Tab, Checkbox, Menu, Tooltip, LinearProgress, Fab
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Alert, TextField, FormControl, InputLabel, Select, MenuItem, 
+  Checkbox, Menu, Tooltip, LinearProgress, Fab
 } from '@mui/material'
 import {
-  Add as AddIcon, FilterList as FilterIcon, ViewList as ListIcon,
+  Add as AddIcon, ViewList as ListIcon,
   ViewModule as GridIcon, Search as SearchIcon, MoreVert as MoreIcon,
   PlayArrow as PlayIcon, Pause as PauseIcon, Edit as EditIcon,
   Delete as DeleteIcon, FileCopy as CopyIcon, Archive as ArchiveIcon,
   TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon,
-  Remove as RemoveIcon, Visibility as ViewIcon, Analytics as AnalyticsIcon,
+  Remove as RemoveIcon, Analytics as AnalyticsIcon,
   Campaign as CampaignIcon, Google as GoogleIcon, Facebook as FacebookIcon,
   Instagram as InstagramIcon, LinkedIn as LinkedInIcon, Twitter as TwitterIcon,
   Email as EmailIcon, Web as WebIcon, Refresh as RefreshIcon
@@ -108,6 +107,7 @@ const platformIcons = {
 
 export default function CampaignsPortfolioPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
@@ -116,9 +116,21 @@ export default function CampaignsPortfolioPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [platformFilter, setPlatformFilter] = useState<string>('all')
-  const [showFilters, setShowFilters] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+
+  // Check for success message from Campaign Designer
+  useEffect(() => {
+    const created = searchParams.get('created')
+    if (created) {
+      setShowSuccessMessage(true)
+      // Remove the parameter from URL without page reload
+      const url = new URL(window.location.href)
+      url.searchParams.delete('created')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
 
   // Load campaigns
   useEffect(() => {
@@ -321,6 +333,17 @@ export default function CampaignsPortfolioPage() {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <Alert 
+          severity="success" 
+          onClose={() => setShowSuccessMessage(false)}
+          sx={{ mb: 3 }}
+        >
+          🎉 Campaign created successfully! Your new campaign is now in your portfolio.
+        </Alert>
+      )}
+
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>

@@ -139,6 +139,63 @@ class CampaignAnalyzerService:
         
         return self.create_campaign(campaign_data, user_id, org_id)
     
+    def create_campaign_from_designer(
+        self,
+        designer_data,  # CampaignDesignerData type
+        user_id: UUID,
+        org_id: UUID
+    ) -> Campaign:
+        """Create a campaign from Campaign Designer wizard data"""
+        
+        # Map Campaign Designer objective to campaign type and platform
+        objective_mapping = {
+            "lead_gen": {"type": "search", "platform": "google_ads"},
+            "ecommerce_sales": {"type": "shopping", "platform": "google_ads"},
+            "app_installs": {"type": "app", "platform": "google_ads"},
+            "awareness": {"type": "video", "platform": "google_ads"}
+        }
+        
+        mapping = objective_mapping.get(designer_data.objective, {"type": "search", "platform": "google_ads"})
+        
+        # Extract channel information
+        channel_names = [ch["channel"] for ch in designer_data.channels]
+        
+        # Create target KPIs
+        target_kpis = {
+            designer_data.primaryKpi: designer_data.kpiTarget
+        }
+        
+        # Parse geo targeting
+        geo_list = []
+        if isinstance(designer_data.targeting.get("geo"), list):
+            geo_list = designer_data.targeting["geo"]
+        elif isinstance(designer_data.targeting.get("geo"), str):
+            geo_list = [g.strip() for g in designer_data.targeting["geo"].split(",")]
+        
+        # Create campaign data
+        campaign_data = CampaignCreate(
+            name=designer_data.name,
+            description=f"Campaign created from Designer wizard - {designer_data.objective} campaign",
+            campaign_type=mapping["type"],
+            platform=mapping["platform"],
+            primary_objective=designer_data.objective,
+            target_kpis=target_kpis,
+            total_budget=float(designer_data.budget["total"]),
+            daily_budget=float(designer_data.budget["daily"]),
+            target_locations=geo_list,
+            target_demographics={"audience_description": designer_data.targeting.get("audience", "")},
+            custom_fields={
+                "designer_data": designer_data.dict(),
+                "channels": designer_data.channels,
+                "design_score": designer_data.designScore,
+                "selected_template": designer_data.selectedTemplate,
+                "channel_allocation": {ch["channel"]: {"percentage": ch["percentage"], "amount": ch["amount"]} for ch in designer_data.channels}
+            },
+            tags=["campaign-designer", designer_data.objective] + channel_names
+        )
+        
+        return self.create_campaign(campaign_data, user_id, org_id)
+    
     def start_campaign_analysis(
         self,
         campaign_id: UUID,

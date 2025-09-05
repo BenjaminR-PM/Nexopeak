@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { createCampaignFromDesigner, type CampaignDesignerData } from '@/lib/campaigns';
 import {
   Box, Card, CardContent, Typography, Button, Grid, Chip,
   TextField, FormControl, InputLabel, Select, MenuItem, Slider,
@@ -76,6 +77,8 @@ export default function CampaignDesignerPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Campaign Configuration State
   const [campaignName, setCampaignName] = useState('');
@@ -173,10 +176,10 @@ export default function CampaignDesignerPage() {
   };
 
   const generateCampaignPlan = () => {
-    const plan = {
+    const plan: CampaignDesignerData = {
       name: campaignName,
-      objective,
-      primaryKpi,
+      objective: objective as CampaignDesignerData['objective'],
+      primaryKpi: primaryKpi as CampaignDesignerData['primaryKpi'],
       budget: {
         total: budget,
         daily: dailyBudget,
@@ -189,11 +192,53 @@ export default function CampaignDesignerPage() {
       },
       kpiTarget,
       designScore,
+      selectedTemplate,
       createdAt: new Date().toISOString()
     };
     
     navigator.clipboard.writeText(JSON.stringify(plan, null, 2));
-    // Could also save to backend here
+  };
+
+  const createCampaign = async () => {
+    if (!campaignName || !targetAudience || channels.length === 0) {
+      setError('Please complete all required fields');
+      return;
+    }
+
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      const campaignData: CampaignDesignerData = {
+        name: campaignName,
+        objective: objective as CampaignDesignerData['objective'],
+        primaryKpi: primaryKpi as CampaignDesignerData['primaryKpi'],
+        budget: {
+          total: budget,
+          daily: dailyBudget,
+          duration: duration
+        },
+        channels: budgetAllocation,
+        targeting: {
+          geo,
+          audience: targetAudience
+        },
+        kpiTarget,
+        designScore,
+        selectedTemplate,
+        createdAt: new Date().toISOString()
+      };
+
+      const campaign = await createCampaignFromDesigner(campaignData);
+      
+      // Redirect to campaigns page with success message
+      router.push(`/dashboard/campaigns?created=${campaign.id}`);
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create campaign');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -220,6 +265,19 @@ export default function CampaignDesignerPage() {
           </Typography>
         </Box>
       </Box>
+
+      {/* Error Display */}
+      {error && (
+        <Box sx={{ mb: 3 }}>
+          <Card sx={{ bgcolor: '#fef2f2', borderColor: '#ef4444' }}>
+            <CardContent>
+              <Typography variant="body2" sx={{ color: '#ef4444' }}>
+                {error}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       {/* Design Score Card */}
       {activeStep > 0 && (() => {
@@ -633,14 +691,15 @@ export default function CampaignDesignerPage() {
                 </Grid>
                 
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button onClick={handleBack}>Back</Button>
+                  <Button onClick={handleBack} disabled={isCreating}>Back</Button>
                   <Button 
                     variant="contained" 
-                    startIcon={<RocketIcon />}
-                    onClick={() => router.push('/dashboard/campaigns')}
+                    startIcon={isCreating ? undefined : <RocketIcon />}
+                    onClick={createCampaign}
+                    disabled={isCreating || !campaignName || !targetAudience || channels.length === 0}
                     sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
                   >
-                    Launch Campaign
+                    {isCreating ? 'Creating Campaign...' : 'Launch Campaign'}
                   </Button>
                 </Box>
               </StepContent>
