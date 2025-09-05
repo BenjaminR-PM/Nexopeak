@@ -454,7 +454,7 @@ export default function DashboardPage() {
                 </Typography>
               </Box>
               <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                Discover campaign generator, analytics insights, and automated reports.
+                Discover analytics insights, automated reports, and campaign management tools.
               </Typography>
             </Paper>
           </Box>

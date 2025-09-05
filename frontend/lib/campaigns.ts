@@ -304,22 +304,6 @@ export async function createCampaign(campaignData: CampaignCreate): Promise<Camp
   }
 }
 
-/**
- * Create campaign from questionnaire
- */
-export async function createCampaignFromQuestionnaire(questionnaire: CampaignQuestionnaire): Promise<Campaign> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/campaigns/from-questionnaire`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(questionnaire)
-    })
-    return handleResponse<Campaign>(response)
-  } catch (error) {
-    console.error('Error creating campaign from questionnaire:', error)
-    throw error
-  }
-}
 
 /**
  * Update a campaign

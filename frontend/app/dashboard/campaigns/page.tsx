@@ -282,13 +282,13 @@ export default function CampaignsPortfolioPage() {
 
     switch (action) {
       case 'edit':
-        router.push(`/dashboard/campaign-generator?edit=${selectedCampaignId}`)
+        router.push(`/dashboard/campaign-designer?edit=${selectedCampaignId}`)
         break
       case 'analyze':
         router.push(`/dashboard/campaign-analyzer?campaign=${selectedCampaignId}`)
         break
       case 'duplicate':
-        router.push(`/dashboard/campaign-generator?duplicate=${selectedCampaignId}`)
+        router.push(`/dashboard/campaign-designer?duplicate=${selectedCampaignId}`)
         break
       case 'archive':
         handleStatusChange(selectedCampaignId, 'archived')
@@ -357,7 +357,7 @@ export default function CampaignsPortfolioPage() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => router.push('/dashboard/campaign-generator')}
+          onClick={() => router.push('/dashboard/campaign-designer')}
           sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
         >
           Create Campaign
@@ -772,7 +772,7 @@ export default function CampaignsPortfolioPage() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => router.push('/dashboard/campaign-generator')}
+              onClick={() => router.push('/dashboard/campaign-designer')}
               sx={{ bgcolor: '#f97316', '&:hover': { bgcolor: '#ea580c' } }}
             >
               Create Your First Campaign
@@ -793,7 +793,7 @@ export default function CampaignsPortfolioPage() {
           bgcolor: '#f97316',
           '&:hover': { bgcolor: '#ea580c' }
         }}
-        onClick={() => router.push('/dashboard/campaign-generator')}
+        onClick={() => router.push('/dashboard/campaign-designer')}
       >
         <AddIcon />
       </Fab>

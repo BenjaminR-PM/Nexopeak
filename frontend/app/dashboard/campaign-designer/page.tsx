@@ -91,26 +91,186 @@ export default function CampaignDesignerPage() {
   const [channels, setChannels] = useState(['Search', 'Meta', 'LinkedIn']);
   const [targetAudience, setTargetAudience] = useState('');
   const [kpiTarget, setKpiTarget] = useState(35);
+  
+  // Enhanced target audience fields
+  const [audienceAge, setAudienceAge] = useState('25-54');
+  const [audienceGender, setAudienceGender] = useState('all');
+  const [audienceIncome, setAudienceIncome] = useState('middle');
+  const [audienceInterests, setAudienceInterests] = useState<string[]>([]);
+  const [audienceJobTitles, setAudienceJobTitles] = useState<string[]>([]);
+  const [audienceIndustries, setAudienceIndustries] = useState<string[]>([]);
+
+  // Budget validation and formatting
+  const formatBudget = (value: string) => {
+    // Remove non-numeric characters except decimal point
+    const numericValue = value.replace(/[^\d.]/g, '');
+    const number = parseFloat(numericValue);
+    
+    if (isNaN(number) || number <= 0) return '';
+    
+    // Format with commas
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
+  const parseBudget = (formattedValue: string): number => {
+    const numericValue = formattedValue.replace(/[^\d]/g, '');
+    const number = parseInt(numericValue);
+    return isNaN(number) || number <= 0 ? 0 : number;
+  };
+
+  const validateBudget = (value: number): boolean => {
+    return value > 0;
+  };
+
+  // Geographic options
+  const geoOptions = [
+    { value: 'CA-ON', label: 'Ontario, Canada', country: 'Canada' },
+    { value: 'CA-BC', label: 'British Columbia, Canada', country: 'Canada' },
+    { value: 'CA-AB', label: 'Alberta, Canada', country: 'Canada' },
+    { value: 'CA-QC', label: 'Quebec, Canada', country: 'Canada' },
+    { value: 'US-CA', label: 'California, USA', country: 'United States' },
+    { value: 'US-NY', label: 'New York, USA', country: 'United States' },
+    { value: 'US-TX', label: 'Texas, USA', country: 'United States' },
+    { value: 'US-FL', label: 'Florida, USA', country: 'United States' },
+    { value: 'UK', label: 'United Kingdom', country: 'Europe' },
+    { value: 'DE', label: 'Germany', country: 'Europe' },
+    { value: 'FR', label: 'France', country: 'Europe' },
+    { value: 'AU', label: 'Australia', country: 'Oceania' },
+  ];
+
+  // Audience interest options
+  const interestOptions = [
+    'Technology', 'Business & Finance', 'Marketing', 'Healthcare', 'Education',
+    'E-commerce', 'Travel', 'Food & Dining', 'Fitness & Wellness', 'Entertainment',
+    'Real Estate', 'Automotive', 'Fashion', 'Sports', 'Gaming', 'Music',
+    'Art & Design', 'Photography', 'Books & Literature', 'Home & Garden'
+  ];
+
+  // Job title options
+  const jobTitleOptions = [
+    'CEO', 'CTO', 'CMO', 'VP Marketing', 'Marketing Manager', 'Digital Marketing Manager',
+    'Product Manager', 'Sales Manager', 'Business Owner', 'Entrepreneur', 'Consultant',
+    'Director', 'Manager', 'Analyst', 'Coordinator', 'Specialist', 'Executive',
+    'Developer', 'Designer', 'Engineer', 'Researcher'
+  ];
+
+  // Industry options
+  const industryOptions = [
+    'Technology', 'Healthcare', 'Finance', 'Education', 'Retail', 'Manufacturing',
+    'Real Estate', 'Consulting', 'Media & Entertainment', 'Travel & Hospitality',
+    'Automotive', 'Energy', 'Non-profit', 'Government', 'Agriculture', 'Construction',
+    'Transportation', 'Telecommunications', 'Food & Beverage', 'Fashion'
+  ];
 
   // Real-time calculations
   const designScore = useMemo(() => {
-    let score = 50;
+    let score = 30; // Base score
+    let feedback: string[] = [];
     
-    // Objective-channel alignment
-    if (objective === 'lead_gen' && channels.includes('Search')) score += 15;
-    if (objective === 'ecommerce_sales' && channels.includes('Performance Max')) score += 15;
-    if (objective === 'awareness' && channels.includes('YouTube')) score += 15;
+    // Objective-channel alignment (25 points)
+    if (objective === 'lead_gen' && channels.includes('Search')) {
+      score += 15;
+      feedback.push('✓ Search is excellent for lead generation');
+    }
+    if (objective === 'ecommerce_sales' && channels.includes('Performance Max')) {
+      score += 15;
+      feedback.push('✓ Performance Max optimizes for e-commerce sales');
+    }
+    if (objective === 'awareness' && channels.includes('YouTube')) {
+      score += 15;
+      feedback.push('✓ YouTube is perfect for brand awareness');
+    }
+    if (objective === 'app_installs' && (channels.includes('Meta') || channels.includes('TikTok'))) {
+      score += 15;
+      feedback.push('✓ Social channels drive app installs effectively');
+    }
     
-    // Budget adequacy
-    if (budget >= 10000) score += 10;
-    if (dailyBudget * duration <= budget) score += 10;
+    // Budget adequacy (20 points)
+    if (budget >= 10000) {
+      score += 10;
+      feedback.push('✓ Budget is sufficient for meaningful results');
+    } else if (budget >= 5000) {
+      score += 5;
+      feedback.push('⚠ Consider increasing budget for better performance');
+    } else {
+      feedback.push('⚠ Budget may be too low for optimal results');
+    }
     
-    // Channel diversity
-    if (channels.length >= 3) score += 10;
-    if (channels.length <= 5) score += 5;
+    if (validateBudget(budget) && validateBudget(dailyBudget) && dailyBudget * duration <= budget) {
+      score += 10;
+      feedback.push('✓ Budget allocation is mathematically sound');
+    } else {
+      feedback.push('⚠ Daily budget doesn\'t align with total budget and duration');
+    }
     
-    return Math.min(100, Math.max(0, score));
-  }, [objective, channels, budget, dailyBudget, duration]);
+    // Channel diversity (15 points)
+    if (channels.length >= 3 && channels.length <= 5) {
+      score += 15;
+      feedback.push('✓ Good channel mix for diversified reach');
+    } else if (channels.length >= 2) {
+      score += 10;
+      feedback.push('⚠ Consider adding more channels for better reach');
+    } else if (channels.length === 1) {
+      score += 5;
+      feedback.push('⚠ Single channel campaigns have higher risk');
+    } else {
+      feedback.push('⚠ Please select at least one marketing channel');
+    }
+    
+    // Audience targeting completeness (15 points)
+    if (targetAudience && audienceInterests.length > 0) {
+      score += 10;
+      feedback.push('✓ Well-defined target audience');
+    } else if (targetAudience) {
+      score += 5;
+      feedback.push('⚠ Add interests for better targeting');
+    } else {
+      feedback.push('⚠ Define your target audience');
+    }
+    
+    if (audienceJobTitles.length > 0 || audienceIndustries.length > 0) {
+      score += 5;
+      feedback.push('✓ Professional targeting criteria defined');
+    }
+    
+    // Geographic targeting (10 points)
+    if (geo.length > 0 && geo.length <= 5) {
+      score += 10;
+      feedback.push('✓ Focused geographic targeting');
+    } else if (geo.length > 5) {
+      score += 5;
+      feedback.push('⚠ Too many locations may dilute performance');
+    } else {
+      feedback.push('⚠ Select target geographic locations');
+    }
+    
+    // Campaign duration appropriateness (10 points)
+    if (duration >= 30 && duration <= 90) {
+      score += 10;
+      feedback.push('✓ Optimal campaign duration for learning and optimization');
+    } else if (duration >= 14) {
+      score += 5;
+      feedback.push('⚠ Consider longer duration for better optimization');
+    } else {
+      feedback.push('⚠ Campaign duration may be too short for meaningful results');
+    }
+    
+    // KPI target realism (5 points)
+    if (kpiTarget > 0) {
+      score += 5;
+      feedback.push('✓ KPI target set');
+    } else {
+      feedback.push('⚠ Set a realistic KPI target');
+    }
+    
+    return {
+      score: Math.min(100, Math.max(0, score)),
+      feedback
+    };
+  }, [objective, channels, budget, dailyBudget, duration, targetAudience, audienceInterests, audienceJobTitles, audienceIndustries, geo, kpiTarget]);
 
   const budgetAllocation = useMemo(() => {
     const weights: Record<string, number> = {
@@ -191,7 +351,7 @@ export default function CampaignDesignerPage() {
         audience: targetAudience
       },
       kpiTarget,
-      designScore,
+      designScore: designScore.score,
       selectedTemplate: selectedTemplate || undefined,
       createdAt: new Date().toISOString()
     };
@@ -224,7 +384,7 @@ export default function CampaignDesignerPage() {
           audience: targetAudience
         },
         kpiTarget,
-        designScore,
+        designScore: designScore.score,
         selectedTemplate: selectedTemplate || undefined,
         createdAt: new Date().toISOString()
       };
@@ -282,20 +442,20 @@ export default function CampaignDesignerPage() {
       {/* Design Score Card */}
       {activeStep > 0 && (() => {
         const getScoreColor = () => {
-          if (designScore >= 80) return '#3b82f6';
-          if (designScore >= 60) return '#f59e0b';
+          if (designScore.score >= 80) return '#3b82f6';
+          if (designScore.score >= 60) return '#f59e0b';
           return '#ef4444';
         };
         
         const getScoreBgColor = () => {
-          if (designScore >= 80) return '#f0f9ff';
-          if (designScore >= 60) return '#fffbeb';
+          if (designScore.score >= 80) return '#f0f9ff';
+          if (designScore.score >= 60) return '#fffbeb';
           return '#fef2f2';
         };
         
         const getScoreMessage = () => {
-          if (designScore >= 80) return 'Excellent campaign setup!';
-          if (designScore >= 60) return 'Good setup, consider optimizations';
+          if (designScore.score >= 80) return 'Excellent campaign setup!';
+          if (designScore.score >= 60) return 'Good setup, consider optimizations';
           return 'Needs improvement for better performance';
         };
         
@@ -307,7 +467,7 @@ export default function CampaignDesignerPage() {
                   <SpeedIcon sx={{ color: getScoreColor() }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Design Score: {designScore}/100
+                      Design Score: {designScore.score}/100
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6b7280' }}>
                       {getScoreMessage()}
@@ -418,6 +578,12 @@ export default function CampaignDesignerPage() {
                         <MenuItem value="awareness">Brand Awareness</MenuItem>
                       </Select>
                     </FormControl>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 1, fontSize: '0.875rem' }}>
+                      {objective === 'lead_gen' && 'Focus on generating qualified leads through forms, calls, or inquiries. Best for B2B and service businesses.'}
+                      {objective === 'ecommerce_sales' && 'Drive online purchases and revenue. Optimized for product catalogs and shopping experiences.'}
+                      {objective === 'app_installs' && 'Increase mobile app downloads and user acquisition. Perfect for mobile-first businesses.'}
+                      {objective === 'awareness' && 'Build brand recognition and reach new audiences. Ideal for new products or market expansion.'}
+                    </Typography>
                   </Grid>
                   
                   <Grid item xs={12} md={6}>
@@ -435,17 +601,160 @@ export default function CampaignDesignerPage() {
                         <MenuItem value="Reach">Reach & Impressions</MenuItem>
                       </Select>
                     </FormControl>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 1, fontSize: '0.875rem' }}>
+                      {primaryKpi === 'CPL' && 'Measures cost efficiency for lead generation. Lower CPL means more leads for your budget.'}
+                      {primaryKpi === 'CPA' && 'Tracks cost per customer acquisition. Focus on converting leads to paying customers.'}
+                      {primaryKpi === 'ROAS' && 'Return on Ad Spend - revenue generated per dollar spent. Target 3:1 or higher for profitability.'}
+                      {primaryKpi === 'CTR' && 'Click-through rate measures ad engagement. Higher CTR indicates relevant, compelling ads.'}
+                      {primaryKpi === 'Reach' && 'Total unique people who see your ads. Best for brand awareness and market penetration.'}
+                    </Typography>
+                  </Grid>
+                  
+                  {/* Enhanced Target Audience Section */}
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                      Target Audience Details
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Age Range</InputLabel>
+                      <Select
+                        value={audienceAge}
+                        label="Age Range"
+                        onChange={(e) => setAudienceAge(e.target.value)}
+                      >
+                        <MenuItem value="18-24">18-24 (Gen Z)</MenuItem>
+                        <MenuItem value="25-34">25-34 (Younger Millennials)</MenuItem>
+                        <MenuItem value="35-44">35-44 (Older Millennials)</MenuItem>
+                        <MenuItem value="45-54">45-54 (Gen X)</MenuItem>
+                        <MenuItem value="55-64">55-64 (Younger Boomers)</MenuItem>
+                        <MenuItem value="65+">65+ (Older Adults)</MenuItem>
+                        <MenuItem value="25-54">25-54 (Prime Working Age)</MenuItem>
+                        <MenuItem value="all">All Ages</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Gender</InputLabel>
+                      <Select
+                        value={audienceGender}
+                        label="Gender"
+                        onChange={(e) => setAudienceGender(e.target.value)}
+                      >
+                        <MenuItem value="all">All Genders</MenuItem>
+                        <MenuItem value="male">Male</MenuItem>
+                        <MenuItem value="female">Female</MenuItem>
+                        <MenuItem value="non-binary">Non-binary</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Income Level</InputLabel>
+                      <Select
+                        value={audienceIncome}
+                        label="Income Level"
+                        onChange={(e) => setAudienceIncome(e.target.value)}
+                      >
+                        <MenuItem value="low">Lower Income ($0-$40K)</MenuItem>
+                        <MenuItem value="middle">Middle Income ($40K-$100K)</MenuItem>
+                        <MenuItem value="upper-middle">Upper Middle ($100K-$200K)</MenuItem>
+                        <MenuItem value="high">High Income ($200K+)</MenuItem>
+                        <MenuItem value="all">All Income Levels</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Interests (Select Multiple)</InputLabel>
+                      <Select
+                        multiple
+                        value={audienceInterests}
+                        label="Interests (Select Multiple)"
+                        onChange={(e) => setAudienceInterests(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                        renderValue={(selected) => (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {selected.map((value) => (
+                              <Chip key={value} label={value} size="small" />
+                            ))}
+                          </Box>
+                        )}
+                      >
+                        {interestOptions.map((interest) => (
+                          <MenuItem key={interest} value={interest}>
+                            {interest}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Job Titles (B2B)</InputLabel>
+                      <Select
+                        multiple
+                        value={audienceJobTitles}
+                        label="Job Titles (B2B)"
+                        onChange={(e) => setAudienceJobTitles(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                        renderValue={(selected) => (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {selected.map((value) => (
+                              <Chip key={value} label={value} size="small" />
+                            ))}
+                          </Box>
+                        )}
+                      >
+                        {jobTitleOptions.map((title) => (
+                          <MenuItem key={title} value={title}>
+                            {title}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Industries</InputLabel>
+                      <Select
+                        multiple
+                        value={audienceIndustries}
+                        label="Industries"
+                        onChange={(e) => setAudienceIndustries(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                        renderValue={(selected) => (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {selected.map((value) => (
+                              <Chip key={value} label={value} size="small" />
+                            ))}
+                          </Box>
+                        )}
+                      >
+                        {industryOptions.map((industry) => (
+                          <MenuItem key={industry} value={industry}>
+                            {industry}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                   
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Target Audience Description"
+                      label="Additional Audience Description"
                       value={targetAudience}
                       onChange={(e) => setTargetAudience(e.target.value)}
-                      placeholder="e.g., B2B decision makers, 25-54, interested in project management software"
+                      placeholder="e.g., Small business owners looking for productivity tools, tech-savvy early adopters"
                       multiline
                       rows={2}
+                      helperText="Describe any specific characteristics, behaviors, or motivations of your target audience"
                     />
                   </Grid>
                 </Grid>
@@ -473,10 +782,21 @@ export default function CampaignDesignerPage() {
                     <TextField
                       fullWidth
                       label="Total Budget"
-                      type="number"
-                      value={budget}
-                      onChange={(e) => setBudget(parseInt(e.target.value) || 0)}
-                      InputProps={{ startAdornment: '$' }}
+                      value={budget > 0 ? formatBudget(budget.toString()) : ''}
+                      onChange={(e) => {
+                        const parsed = parseBudget(e.target.value);
+                        setBudget(parsed);
+                      }}
+                      InputProps={{ 
+                        startAdornment: '$',
+                      }}
+                      error={budget > 0 && !validateBudget(budget)}
+                      helperText={
+                        budget > 0 && !validateBudget(budget) 
+                          ? 'Budget must be greater than $0' 
+                          : 'Minimum recommended: $5,000 for meaningful results'
+                      }
+                      placeholder="15,000"
                     />
                   </Grid>
                   
@@ -484,10 +804,23 @@ export default function CampaignDesignerPage() {
                     <TextField
                       fullWidth
                       label="Daily Budget"
-                      type="number"
-                      value={dailyBudget}
-                      onChange={(e) => setDailyBudget(parseInt(e.target.value) || 0)}
-                      InputProps={{ startAdornment: '$' }}
+                      value={dailyBudget > 0 ? formatBudget(dailyBudget.toString()) : ''}
+                      onChange={(e) => {
+                        const parsed = parseBudget(e.target.value);
+                        setDailyBudget(parsed);
+                      }}
+                      InputProps={{ 
+                        startAdornment: '$',
+                      }}
+                      error={dailyBudget > 0 && (!validateBudget(dailyBudget) || dailyBudget * duration > budget)}
+                      helperText={
+                        dailyBudget > 0 && !validateBudget(dailyBudget)
+                          ? 'Daily budget must be greater than $0'
+                          : dailyBudget * duration > budget
+                          ? `Daily budget × duration ($${(dailyBudget * duration).toLocaleString()}) exceeds total budget`
+                          : `Total spend over ${duration} days: $${(dailyBudget * duration).toLocaleString()}`
+                      }
+                      placeholder="500"
                     />
                   </Grid>
                   
@@ -539,16 +872,50 @@ export default function CampaignDesignerPage() {
               <StepLabel>Channels & Targeting</StepLabel>
               <StepContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>Select Marketing Channels</Typography>
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
+                  Choose 3-5 channels for optimal performance. Each channel serves different purposes and audiences.
+                </Typography>
+                
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  {['Search', 'Meta', 'LinkedIn', 'YouTube', 'Performance Max', 'TikTok', 'Display', 'Email', 'SMS'].map(channel => (
-                    <Grid item key={channel}>
-                      <Chip
-                        label={channel}
-                        onClick={() => toggleChannel(channel)}
-                        color={channels.includes(channel) ? "primary" : "default"}
-                        variant={channels.includes(channel) ? "filled" : "outlined"}
-                        sx={{ cursor: 'pointer' }}
-                      />
+                  {[
+                    { name: 'Search', desc: 'Google Ads - Target high-intent users searching for your products' },
+                    { name: 'Meta', desc: 'Facebook & Instagram - Broad reach with detailed targeting options' },
+                    { name: 'LinkedIn', desc: 'Professional network - Perfect for B2B lead generation' },
+                    { name: 'YouTube', desc: 'Video advertising - Great for brand awareness and engagement' },
+                    { name: 'Performance Max', desc: 'Google\'s AI-driven campaigns across all Google properties' },
+                    { name: 'TikTok', desc: 'Short-form video - Ideal for younger demographics and viral content' },
+                    { name: 'Display', desc: 'Banner ads across websites - Good for retargeting and awareness' },
+                    { name: 'Email', desc: 'Direct communication - High ROI for existing customer base' },
+                    { name: 'SMS', desc: 'Text messaging - Immediate reach with high open rates' }
+                  ].map(channel => (
+                    <Grid item xs={12} sm={6} md={4} key={channel.name}>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          border: channels.includes(channel.name) ? '2px solid #f97316' : '1px solid #e5e7eb',
+                          bgcolor: channels.includes(channel.name) ? '#fff7ed' : 'white',
+                          '&:hover': { borderColor: '#f97316' },
+                          height: '100%'
+                        }}
+                        onClick={() => toggleChannel(channel.name)}
+                      >
+                        <CardContent sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                              {channel.name}
+                            </Typography>
+                            <Chip
+                              size="small"
+                              label={channels.includes(channel.name) ? "Selected" : "Select"}
+                              color={channels.includes(channel.name) ? "primary" : "default"}
+                              variant={channels.includes(channel.name) ? "filled" : "outlined"}
+                            />
+                          </Box>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                            {channel.desc}
+                          </Typography>
+                        </CardContent>
+                      </Card>
                     </Grid>
                   ))}
                 </Grid>
@@ -587,13 +954,58 @@ export default function CampaignDesignerPage() {
                   <AccordionDetails>
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Geographic Targeting"
-                          value={geo.join(', ')}
-                          onChange={(e) => setGeo(e.target.value.split(', '))}
-                          placeholder="CA-ON, CA-BC, US-CA"
-                        />
+                        <FormControl fullWidth>
+                          <InputLabel>Geographic Targeting</InputLabel>
+                          <Select
+                            multiple
+                            value={geo}
+                            label="Geographic Targeting"
+                            onChange={(e) => setGeo(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                            renderValue={(selected) => (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {selected.map((value) => {
+                                  const option = geoOptions.find(opt => opt.value === value);
+                                  return (
+                                    <Chip 
+                                      key={value} 
+                                      label={option?.label || value} 
+                                      size="small" 
+                                      sx={{ bgcolor: '#f0f9ff', color: '#3b82f6' }}
+                                    />
+                                  );
+                                })}
+                              </Box>
+                            )}
+                          >
+                            {/* Group by country */}
+                            {['Canada', 'United States', 'Europe', 'Oceania'].map(country => (
+                              <Box key={country}>
+                                <Typography 
+                                  variant="subtitle2" 
+                                  sx={{ 
+                                    px: 2, 
+                                    py: 1, 
+                                    bgcolor: '#f8fafc', 
+                                    fontWeight: 600,
+                                    color: '#374151'
+                                  }}
+                                >
+                                  {country}
+                                </Typography>
+                                {geoOptions
+                                  .filter(option => option.country === country)
+                                  .map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </MenuItem>
+                                  ))}
+                              </Box>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mt: 1, fontSize: '0.875rem' }}>
+                          Select 1-5 geographic locations for focused targeting. More locations may dilute performance.
+                        </Typography>
                       </Grid>
                     </Grid>
                   </AccordionDetails>
@@ -659,11 +1071,11 @@ export default function CampaignDesignerPage() {
                   </Grid>
                   
                   <Grid item xs={12} md={4}>
-                    <Card sx={{ bgcolor: '#f0f9ff' }}>
+                    <Card sx={{ bgcolor: '#f0f9ff', mb: 3 }}>
                       <CardContent sx={{ textAlign: 'center' }}>
                         <SpeedIcon sx={{ fontSize: 48, color: '#3b82f6', mb: 2 }} />
                         <Typography variant="h4" sx={{ fontWeight: 700, color: '#3b82f6', mb: 1 }}>
-                          {designScore}/100
+                          {designScore.score}/100
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
                           Campaign Design Score
@@ -687,6 +1099,110 @@ export default function CampaignDesignerPage() {
                         </Button>
                       </CardContent>
                     </Card>
+
+                    {/* Scoring Explanation */}
+                    <Card sx={{ bgcolor: '#f8fafc' }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                          How We Score Your Campaign
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                          Our AI evaluates your campaign across multiple dimensions:
+                        </Typography>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Objective-Channel Alignment (25 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            How well your channels match your campaign objective
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Budget Adequacy (20 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Sufficient budget for meaningful results and proper allocation
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Channel Diversity (15 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Balanced mix of 3-5 channels for risk mitigation
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Audience Targeting (15 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Completeness and specificity of target audience
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Geographic Focus (10 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Focused geographic targeting (1-5 locations)
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • Campaign Duration (10 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Optimal 30-90 day duration for learning and optimization
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                            • KPI Target (5 pts)
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.8rem', ml: 2 }}>
+                            Realistic and measurable KPI target set
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+
+                    {/* Improvement Suggestions */}
+                    {designScore.feedback.length > 0 && (
+                      <Card sx={{ bgcolor: '#fffbeb', mt: 3 }}>
+                        <CardContent>
+                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#d97706' }}>
+                            Optimization Suggestions
+                          </Typography>
+                          <List dense>
+                            {designScore.feedback.map((feedback) => (
+                              <ListItem key={feedback} sx={{ py: 0.5, px: 0 }}>
+                                <Typography variant="body2" sx={{ 
+                                  color: feedback.startsWith('✓') ? '#059669' : '#d97706',
+                                  fontSize: '0.875rem'
+                                }}>
+                                  {feedback}
+                                </Typography>
+                              </ListItem>
+                            ))}
+                          </List>
+                          {designScore.score < 80 && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: '#fef3c7', borderRadius: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e', mb: 1 }}>
+                                💡 Quick Wins to Improve Your Score:
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.8rem' }}>
+                                {designScore.score < 60 && '• Increase your budget to at least $5,000 for better results'}
+                                {designScore.score < 70 && audienceInterests.length === 0 && '• Add audience interests for better targeting'}
+                                {designScore.score < 75 && channels.length < 3 && '• Consider adding 1-2 more marketing channels'}
+                                {designScore.score < 80 && duration < 30 && '• Extend campaign duration to 30+ days for optimization'}
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
                   </Grid>
                 </Grid>
                 

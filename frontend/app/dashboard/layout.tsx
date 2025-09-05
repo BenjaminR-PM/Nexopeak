@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   BarChart3,
-  Plus,
   Target,
   TrendingUp,
   LogOut,
@@ -203,13 +202,6 @@ export default function DashboardLayout({
                         Campaigns
                       </Link>
 
-                      <Link
-                        href="/dashboard/campaign-generator"
-                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      >
-                        <Plus className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                        Campaign Generator
-                      </Link>
 
                       <Link
                         href="/dashboard/campaign-analyzer"
