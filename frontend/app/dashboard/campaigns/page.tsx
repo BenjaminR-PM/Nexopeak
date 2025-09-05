@@ -277,15 +277,22 @@ export default function CampaignsPortfolioPage() {
 
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
+      console.log('🗑️ Starting campaign deletion for ID:', campaignId)
+      
       const token = localStorage.getItem('access_token')
       if (!token) {
-        console.error('No authentication token found')
+        console.error('❌ No authentication token found')
+        alert('Please log in to delete campaigns')
         return
       }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+      const deleteUrl = `${API_URL}/api/v1/campaigns/${campaignId}`
       
-      const response = await fetch(`${API_URL}/api/v1/campaigns/${campaignId}`, {
+      console.log('🌐 Making DELETE request to:', deleteUrl)
+      console.log('🔑 Using token:', token.substring(0, 20) + '...')
+      
+      const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -293,18 +300,25 @@ export default function CampaignsPortfolioPage() {
         }
       })
 
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+
       if (response.ok) {
         // Successfully deleted from backend, now update local state
-        setCampaigns(prev => prev.filter(c => c.id !== campaignId))
-        console.log('Campaign deleted successfully')
+        setCampaigns(prev => {
+          const newCampaigns = prev.filter(c => c.id !== campaignId)
+          console.log('✅ Campaign deleted successfully. Campaigns before:', prev.length, 'after:', newCampaigns.length)
+          return newCampaigns
+        })
+        alert('Campaign deleted successfully!')
       } else {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Failed to delete campaign:', errorData)
-        // You could show a toast notification here
+        console.error('❌ Failed to delete campaign. Status:', response.status, 'Error:', errorData)
+        alert(`Failed to delete campaign: ${errorData.detail || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error deleting campaign:', error)
-      // You could show a toast notification here
+      console.error('❌ Error deleting campaign:', error)
+      alert(`Error deleting campaign: ${error.message}`)
     }
   }
 
@@ -396,8 +410,15 @@ export default function CampaignsPortfolioPage() {
   }
 
   const handleCampaignAction = async (action: string) => {
+    console.log('🎯 Campaign action triggered:', action, 'for campaign ID:', selectedCampaignId)
+    
     const campaign = campaigns.find(c => c.id === selectedCampaignId)
-    if (!campaign) return
+    if (!campaign) {
+      console.error('❌ Campaign not found for ID:', selectedCampaignId)
+      return
+    }
+
+    console.log('📋 Found campaign:', campaign.name)
 
     switch (action) {
       case 'edit':
@@ -413,8 +434,11 @@ export default function CampaignsPortfolioPage() {
         handleStatusChange(selectedCampaignId, 'archived')
         break
       case 'delete':
+        console.log('🗑️ Calling handleDeleteCampaign...')
         await handleDeleteCampaign(selectedCampaignId)
         break
+      default:
+        console.log('❓ Unknown action:', action)
     }
     handleMenuClose()
   }
