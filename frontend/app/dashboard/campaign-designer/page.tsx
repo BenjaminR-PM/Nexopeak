@@ -786,6 +786,11 @@ export default function CampaignDesignerPage() {
                       onChange={(e) => {
                         const parsed = parseBudget(e.target.value);
                         setBudget(parsed);
+                        // Auto-calculate daily budget when total budget changes
+                        if (parsed > 0 && duration > 0) {
+                          const newDailyBudget = Math.round(parsed / duration);
+                          setDailyBudget(newDailyBudget);
+                        }
                       }}
                       InputProps={{ 
                         startAdornment: '$',
@@ -808,6 +813,11 @@ export default function CampaignDesignerPage() {
                       onChange={(e) => {
                         const parsed = parseBudget(e.target.value);
                         setDailyBudget(parsed);
+                        // Auto-calculate total budget when daily budget changes
+                        if (parsed > 0 && duration > 0) {
+                          const newTotalBudget = parsed * duration;
+                          setBudget(newTotalBudget);
+                        }
                       }}
                       InputProps={{ 
                         startAdornment: '$',
@@ -824,22 +834,170 @@ export default function CampaignDesignerPage() {
                     />
                   </Grid>
                   
+                  {/* Enhanced Campaign Duration Section */}
                   <Grid item xs={12}>
-                    <Typography gutterBottom>Campaign Duration: {duration} days</Typography>
-                    <Slider
-                      value={duration}
-                      min={7}
-                      max={120}
-                      step={1}
-                      onChange={(_, value) => setDuration(value as number)}
-                      valueLabelDisplay="auto"
-                      marks={[
-                        { value: 7, label: '1 week' },
-                        { value: 30, label: '1 month' },
-                        { value: 60, label: '2 months' },
-                        { value: 90, label: '3 months' }
-                      ]}
-                    />
+                    <Card sx={{ p: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          Campaign Duration
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          Choose the optimal duration for your campaign. Longer campaigns allow for better optimization and learning.
+                        </Typography>
+                      </Box>
+                      
+                      {/* Duration Display */}
+                      <Box sx={{ textAlign: 'center', mb: 4 }}>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#f97316', mb: 1 }}>
+                          {duration}
+                        </Typography>
+                        <Typography variant="h6" sx={{ color: '#374151', fontWeight: 500 }}>
+                          {duration === 1 ? 'Day' : 'Days'}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mt: 1 }}>
+                          {duration < 7 ? 'Very Short Campaign' :
+                           duration < 14 ? 'Short Campaign' :
+                           duration < 30 ? 'Standard Campaign' :
+                           duration < 60 ? 'Extended Campaign' :
+                           duration < 90 ? 'Long Campaign' : 'Very Long Campaign'}
+                        </Typography>
+                      </Box>
+
+                      {/* Professional Slider */}
+                      <Box sx={{ px: 2 }}>
+                        <Slider
+                          value={duration}
+                          min={7}
+                          max={120}
+                          step={1}
+                          onChange={(_, value) => {
+                            const newDuration = value as number;
+                            setDuration(newDuration);
+                            // Auto-calculate daily budget when duration changes
+                            if (budget > 0 && newDuration > 0) {
+                              const newDailyBudget = Math.round(budget / newDuration);
+                              setDailyBudget(newDailyBudget);
+                            }
+                          }}
+                          valueLabelDisplay="auto"
+                          sx={{
+                            color: '#f97316',
+                            height: 8,
+                            '& .MuiSlider-track': {
+                              border: 'none',
+                              background: 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)',
+                            },
+                            '& .MuiSlider-thumb': {
+                              height: 24,
+                              width: 24,
+                              backgroundColor: '#fff',
+                              border: '3px solid #f97316',
+                              boxShadow: '0 4px 8px rgba(249, 115, 22, 0.3)',
+                              '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+                                boxShadow: '0 6px 12px rgba(249, 115, 22, 0.4)',
+                                transform: 'scale(1.1)',
+                              },
+                            },
+                            '& .MuiSlider-rail': {
+                              color: '#e2e8f0',
+                              opacity: 1,
+                              height: 8,
+                            },
+                            '& .MuiSlider-mark': {
+                              backgroundColor: '#94a3b8',
+                              height: 12,
+                              width: 3,
+                              borderRadius: 2,
+                              '&.MuiSlider-markActive': {
+                                backgroundColor: '#f97316',
+                              },
+                            },
+                            '& .MuiSlider-markLabel': {
+                              fontSize: '0.75rem',
+                              fontWeight: 500,
+                              color: '#6b7280',
+                              '&.MuiSlider-markLabelActive': {
+                                color: '#f97316',
+                                fontWeight: 600,
+                              },
+                            },
+                            '& .MuiSlider-valueLabel': {
+                              backgroundColor: '#374151',
+                              color: '#fff',
+                              fontSize: '0.875rem',
+                              fontWeight: 600,
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              '&:before': {
+                                borderTopColor: '#374151',
+                              },
+                            },
+                          }}
+                          marks={[
+                            { value: 7, label: '1 Week' },
+                            { value: 14, label: '2 Weeks' },
+                            { value: 30, label: '1 Month' },
+                            { value: 60, label: '2 Months' },
+                            { value: 90, label: '3 Months' },
+                            { value: 120, label: '4 Months' }
+                          ]}
+                        />
+                      </Box>
+
+                      {/* Duration Insights */}
+                      <Box sx={{ mt: 4, p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#374151' }}>
+                          Duration Insights
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ textAlign: 'center', p: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#059669', mb: 1 }}>
+                                Learning Phase
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {duration < 14 ? 'Limited learning' : 
+                                 duration < 30 ? 'Basic optimization' : 
+                                 'Full optimization potential'}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ textAlign: 'center', p: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#3b82f6', mb: 1 }}>
+                                Budget Efficiency
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                ${Math.round(budget / duration).toLocaleString()}/day
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ textAlign: 'center', p: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#8b5cf6', mb: 1 }}>
+                                Campaign Type
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {duration < 30 ? 'Sprint' : duration < 60 ? 'Standard' : 'Marathon'}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      {/* Recommendations */}
+                      <Box sx={{ mt: 3, p: 2, bgcolor: '#fffbeb', borderRadius: 2, border: '1px solid #fbbf24' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e', mb: 1 }}>
+                          💡 Recommendation
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#92400e', fontSize: '0.875rem' }}>
+                          {duration < 14 && 'Consider extending to at least 14 days for better optimization results.'}
+                          {duration >= 14 && duration < 30 && 'Good duration for testing. Consider 30+ days for full optimization.'}
+                          {duration >= 30 && duration <= 90 && 'Excellent duration for learning and optimization!'}
+                          {duration > 90 && 'Long campaigns work well for brand awareness and sustained growth.'}
+                        </Typography>
+                      </Box>
+                    </Card>
                   </Grid>
                   
                   <Grid item xs={12}>
