@@ -289,19 +289,47 @@ export default function CampaignsPortfolioPage() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
       const deleteUrl = `${API_URL}/api/v1/campaigns/${campaignId}`
       
+      console.log('🌐 API_URL from env:', process.env.NEXT_PUBLIC_API_URL)
+      console.log('🌐 Final API_URL:', API_URL)
       console.log('🌐 Making DELETE request to:', deleteUrl)
       console.log('🔑 Using token:', token.substring(0, 20) + '...')
+      
+      // Test connectivity first
+      console.log('🔍 Testing backend connectivity...')
+      try {
+        const healthResponse = await fetch(`${API_URL}/health`, { 
+          method: 'GET',
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        })
+        console.log('🔍 Health check status:', healthResponse.status)
+        if (!healthResponse.ok) {
+          throw new Error(`Backend health check failed: ${healthResponse.status}`)
+        }
+      } catch (healthError) {
+        console.error('❌ Backend connectivity test failed:', healthError)
+        alert('Cannot connect to backend server. Please check your internet connection.')
+        return
+      }
+      
+      // Add timeout and better error handling
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId)
+      
       console.log('📡 Response status:', response.status)
       console.log('📡 Response ok:', response.ok)
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         // Successfully deleted from backend, now update local state
@@ -312,13 +340,37 @@ export default function CampaignsPortfolioPage() {
         })
         alert('Campaign deleted successfully!')
       } else {
-        const errorData = await response.json().catch(() => ({}))
+        let errorData = {}
+        try {
+          errorData = await response.json()
+        } catch (jsonError) {
+          console.log('📄 Response is not JSON, getting text...')
+          const textData = await response.text()
+          console.log('📄 Response text:', textData)
+          errorData = { detail: textData || `HTTP ${response.status}` }
+        }
+        
         console.error('❌ Failed to delete campaign. Status:', response.status, 'Error:', errorData)
-        alert(`Failed to delete campaign: ${errorData.detail || 'Unknown error'}`)
+        alert(`Failed to delete campaign: ${errorData.detail || `HTTP ${response.status}`}`)
       }
     } catch (error) {
       console.error('❌ Error deleting campaign:', error)
-      alert(`Error deleting campaign: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      
+      // Better error messages for common issues
+      let errorMessage = 'Unknown error'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please check your internet connection.'
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('Load failed')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.'
+        } else if (error.message.includes('CORS')) {
+          errorMessage = 'CORS error. Please contact support.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      alert(`Error deleting campaign: ${errorMessage}`)
     }
   }
 
