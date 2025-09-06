@@ -480,6 +480,63 @@ async def update_user(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete("/users/{user_id}", response_model=SuccessResponse)
+async def delete_user(
+    user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Delete a user and all associated data."""
+    try:
+        admin_service = AdminService(db)
+        
+        # Get the user to delete
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Prevent deleting admin users
+        if user.role == 'admin':
+            raise HTTPException(status_code=403, detail="Cannot delete admin users")
+        
+        # Delete associated data first (campaigns, connections, etc.)
+        # Delete user's campaigns
+        db.query(Campaign).filter(Campaign.user_id == user_id).delete()
+        
+        # Delete user's connections
+        db.query(Connection).filter(Connection.user_id == user_id).delete()
+        
+        # Delete the user
+        db.delete(user)
+        db.commit()
+        
+        log_admin_action(
+            admin_service, current_admin, request,
+            action="delete",
+            resource_type="user",
+            resource_id=user_id,
+            description=f"Deleted user: {user.email}",
+            changes={"deleted_user": user.email}
+        )
+        
+        return SuccessResponse(message="User deleted successfully")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_admin_action(
+            admin_service, current_admin, request,
+            action="delete",
+            resource_type="user",
+            resource_id=user_id,
+            description="Failed to delete user",
+            success=False,
+            error_message=str(e)
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # Dashboard Statistics
 # ============================================================================

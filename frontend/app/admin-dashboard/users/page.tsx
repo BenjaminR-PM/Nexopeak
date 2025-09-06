@@ -48,6 +48,7 @@ import {
   Campaign as CampaignIcon,
   Link as LinkIcon,
   Visibility as ViewIcon,
+  Delete as DeleteIcon,
   Facebook as FacebookIcon,
   Instagram as InstagramIcon,
   LinkedIn as LinkedInIcon,
@@ -125,6 +126,11 @@ export default function UserManagementPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [tabValue, setTabValue] = useState(0)
   const [loadingUserData, setLoadingUserData] = useState(false)
+  
+  // State for delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
 
@@ -321,6 +327,44 @@ export default function UserManagementPage() {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  // Handle delete user
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    setDeleting(true)
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${apiUrl}/api/v1/admin/users/${userToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        setSuccess(`User ${userToDelete.name || userToDelete.email} deleted successfully!`)
+        setDeleteDialogOpen(false)
+        setUserToDelete(null)
+        fetchUsers() // Refresh the list
+      } else {
+        const errorData = await response.json()
+        setError(errorData.detail || 'Failed to delete user')
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      setError('Failed to delete user. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Open delete confirmation dialog
+  const openDeleteDialog = (user: User) => {
+    setUserToDelete(user)
+    setDeleteDialogOpen(true)
   }
 
   // Open edit dialog
@@ -547,9 +591,19 @@ export default function UserManagementPage() {
                             <IconButton 
                               onClick={() => openEditDialog(user)}
                               size="small"
-                              sx={{ color: '#dc2626' }}
+                              sx={{ color: '#f59e0b' }}
                             >
                               <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete User">
+                            <IconButton 
+                              onClick={() => openDeleteDialog(user)}
+                              size="small"
+                              sx={{ color: '#dc2626' }}
+                              disabled={user.role === 'admin'} // Prevent deleting admin users
+                            >
+                              <DeleteIcon />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -863,6 +917,48 @@ export default function UserManagementPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => !deleting && setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ color: '#dc2626' }}>
+            Delete User
+          </DialogTitle>
+          <DialogContent>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This action cannot be undone. All user data, campaigns, and connections will be permanently deleted.
+            </Alert>
+            <Typography variant="body1">
+              Are you sure you want to delete the user <strong>{userToDelete?.name || userToDelete?.email}</strong>?
+            </Typography>
+            {userToDelete?.role === 'admin' && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                Admin users cannot be deleted for security reasons.
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteUser}
+              variant="contained"
+              color="error"
+              disabled={deleting || userToDelete?.role === 'admin'}
+              startIcon={deleting ? <CircularProgress size={16} /> : <DeleteIcon />}
+            >
+              {deleting ? 'Deleting...' : 'Delete User'}
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>
