@@ -63,6 +63,7 @@ class Campaign(Base):
     organization = relationship("Organization", back_populates="campaigns")
     user = relationship("User", back_populates="campaigns")
     analyses = relationship("CampaignAnalysis", back_populates="campaign", cascade="all, delete-orphan")
+    optimizations = relationship("CampaignOptimization", back_populates="campaign", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Campaign(id={self.id}, name='{self.name}', type='{self.campaign_type}', status='{self.status}')>"

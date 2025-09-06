@@ -5,6 +5,7 @@ from .user import User
 from .organization import Organization
 from .connection import Connection
 from .campaign import Campaign, CampaignAnalysis
+from .campaign_optimization import CampaignOptimization, MarketIntelligence, OptimizationQuestionnaire
 from .subscription import SubscriptionPlan, Subscription, Invoice
 from .platform_settings import PlatformSettings, SystemMetrics, AuditLog
 from .data_warehouse import DataWarehouse, DataWarehouseConnection, Dataset, DataWarehouseMetrics
@@ -15,6 +16,9 @@ __all__ = [
     "Connection",
     "Campaign",
     "CampaignAnalysis",
+    "CampaignOptimization",
+    "MarketIntelligence",
+    "OptimizationQuestionnaire",
     "SubscriptionPlan",
     "Subscription", 
     "Invoice",
