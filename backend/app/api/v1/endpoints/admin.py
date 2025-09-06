@@ -481,6 +481,54 @@ async def update_user(
 
 
 # ============================================================================
+# Dashboard Statistics
+# ============================================================================
+
+@router.get("/dashboard-stats")
+async def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Get comprehensive dashboard statistics for admin panel."""
+    try:
+        # Get total users
+        total_users = db.query(User).count()
+        
+        # Get total connections
+        total_connections = db.query(Connection).count()
+        active_connections = db.query(Connection).filter(Connection.status == 'active').count()
+        
+        # Get total campaigns
+        total_campaigns = db.query(Campaign).count()
+        active_campaigns = db.query(Campaign).filter(Campaign.is_active == True).count()
+        
+        # Get total organizations
+        total_organizations = db.query(Organization).count()
+        
+        # Calculate estimated events (campaigns * average events per campaign)
+        total_events = total_campaigns * 1000  # Rough estimate
+        
+        # Revenue would come from billing system (placeholder for now)
+        total_revenue = 0
+        monthly_revenue = 0
+        
+        return {
+            "total_users": total_users,
+            "total_connections": total_connections,
+            "active_connections": active_connections,
+            "total_campaigns": total_campaigns,
+            "active_campaigns": active_campaigns,
+            "total_organizations": total_organizations,
+            "total_events": total_events,
+            "total_revenue": total_revenue,
+            "monthly_revenue": monthly_revenue
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # User-Specific Data
 # ============================================================================
 

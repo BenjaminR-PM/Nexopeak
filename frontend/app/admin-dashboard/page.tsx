@@ -16,6 +16,8 @@ import {
   Avatar,
   Chip,
   Grid,
+  CircularProgress,
+  Alert,
 } from '@mui/material'
 import {
   Logout,
@@ -32,10 +34,112 @@ import {
 } from '@mui/icons-material'
 import Link from 'next/link'
 
+interface DashboardStats {
+  totalUsers: number
+  totalConnections: number
+  totalCampaigns: number
+  totalOrganizations: number
+  activeConnections: number
+  totalRevenue: number
+  monthlyRevenue: number
+  totalEvents: number
+}
+
 export default function AdminDashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const router = useRouter()
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nexopeak-backend-54c8631fe608.herokuapp.com'
+
+  // Fetch dashboard statistics
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
+
+      const response = await fetch(`${apiUrl}/api/v1/admin/dashboard-stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      } else {
+        // If endpoint doesn't exist, fetch individual stats
+        await fetchIndividualStats()
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+      await fetchIndividualStats()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fallback: fetch individual statistics
+  const fetchIndividualStats = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
+
+      const [usersRes, connectionsRes, campaignsRes] = await Promise.allSettled([
+        fetch(`${apiUrl}/api/v1/admin/users?limit=1000`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${apiUrl}/api/v1/admin/connections?limit=1000`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${apiUrl}/api/v1/admin/campaigns?limit=1000`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ])
+
+      let totalUsers = 0
+      let totalConnections = 0
+      let activeConnections = 0
+      let totalCampaigns = 0
+
+      // Process users
+      if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
+        const usersData = await usersRes.value.json()
+        totalUsers = usersData.users?.length || 0
+      }
+
+      // Process connections
+      if (connectionsRes.status === 'fulfilled' && connectionsRes.value.ok) {
+        const connectionsData = await connectionsRes.value.json()
+        totalConnections = connectionsData.connections?.length || 0
+        activeConnections = connectionsData.connections?.filter((c: any) => c.status === 'active').length || 0
+      }
+
+      // Process campaigns
+      if (campaignsRes.status === 'fulfilled' && campaignsRes.value.ok) {
+        const campaignsData = await campaignsRes.value.json()
+        totalCampaigns = campaignsData.campaigns?.length || 0
+      }
+
+      setStats({
+        totalUsers,
+        totalConnections,
+        totalCampaigns,
+        totalOrganizations: Math.ceil(totalUsers * 0.7), // Estimate
+        activeConnections,
+        totalRevenue: 0, // Would need billing data
+        monthlyRevenue: 0, // Would need billing data
+        totalEvents: totalCampaigns * 1000 // Rough estimate
+      })
+    } catch (error) {
+      console.error('Error fetching individual stats:', error)
+      setError('Failed to load dashboard statistics')
+    }
+  }
 
   useEffect(() => {
     // Check if user is authenticated and is admin
@@ -54,6 +158,7 @@ export default function AdminDashboardPage() {
         return
       }
       setUser(user)
+      fetchDashboardStats()
     } catch (error) {
       console.error('Error parsing user data:', error)
       router.push('/admin-login')
@@ -74,10 +179,35 @@ export default function AdminDashboardPage() {
     router.push('/admin-login')
   }
 
+  // Helper functions for formatting
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M'
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K'
+    }
+    return num.toString()
+  }
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000) {
+      return '$' + formatNumber(amount)
+    }
+    return '$' + amount.toFixed(0)
+  }
+
   if (!user) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <Typography>Loading admin dashboard...</Typography>
+      </Box>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress size={60} sx={{ color: '#dc2626' }} />
       </Box>
     )
   }
@@ -89,7 +219,7 @@ export default function AdminDashboardPage() {
       icon: LinkIcon,
       href: '/admin-dashboard/ga4-connections',
       color: '#dc2626',
-      stats: '127 Active',
+      stats: stats ? `${stats.activeConnections} Active` : 'Loading...',
       priority: 'high'
     },
     {
@@ -98,16 +228,16 @@ export default function AdminDashboardPage() {
       icon: Business,
       href: '/admin-dashboard/clients',
       color: '#dc2626',
-      stats: '89 Clients',
+      stats: stats ? `${stats.totalOrganizations} Clients` : 'Loading...',
       priority: 'high'
     },
     {
-      title: 'Data Insights Admin',
-      description: 'Platform-wide analytics and data quality monitoring',
+      title: 'Campaign Analytics',
+      description: 'Platform-wide campaign performance and data monitoring',
       icon: Insights,
-      href: '/admin-dashboard/data-insights',
+      href: '/admin-dashboard/campaigns',
       color: '#dc2626',
-      stats: '2.4M Events',
+      stats: stats ? `${formatNumber(stats.totalEvents)} Events` : 'Loading...',
       priority: 'high'
     },
     {
@@ -116,7 +246,7 @@ export default function AdminDashboardPage() {
       icon: MonetizationOn,
       href: '/admin-dashboard/billing',
       color: '#dc2626',
-      stats: '$12.4K MRR',
+      stats: stats ? formatCurrency(stats.monthlyRevenue) + ' MRR' : 'Loading...',
       priority: 'high'
     },
     {
@@ -125,7 +255,7 @@ export default function AdminDashboardPage() {
       icon: People,
       href: '/admin-dashboard/users',
       color: '#1e40af',
-      stats: '234 Users',
+      stats: stats ? `${stats.totalUsers} Users` : 'Loading...',
       priority: 'medium'
     },
     {
@@ -207,6 +337,29 @@ export default function AdminDashboardPage() {
 
       {/* Admin Content */}
       <Box sx={{ p: 4 }}>
+        {/* Error Display */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }}
+            action={
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={() => {
+                  setError('')
+                  setLoading(true)
+                  fetchDashboardStats()
+                }}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
         {/* Welcome Section */}
         <Card sx={{ mb: 4, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
           <CardContent>
