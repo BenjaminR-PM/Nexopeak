@@ -491,25 +491,57 @@ async def delete_user(
     try:
         admin_service = AdminService(db)
         
+        logging_service.log(
+            LogModule.USER_MGMT,
+            f"Admin {current_admin.email} attempting to delete user {user_id}",
+            level="INFO"
+        )
+        
         # Get the user to delete
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
+            logging_service.log(
+                LogModule.USER_MGMT,
+                f"Delete failed: User {user_id} not found",
+                level="WARNING"
+            )
             raise HTTPException(status_code=404, detail="User not found")
         
         # Prevent deleting admin users
         if user.role == 'admin':
+            logging_service.log(
+                LogModule.USER_MGMT,
+                f"Delete blocked: Cannot delete admin user {user.email}",
+                level="WARNING"
+            )
             raise HTTPException(status_code=403, detail="Cannot delete admin users")
+        
+        # Count associated data before deletion
+        campaigns_count = db.query(Campaign).filter(Campaign.user_id == user_id).count()
+        connections_count = db.query(Connection).filter(Connection.user_id == user_id).count()
+        
+        logging_service.log(
+            LogModule.USER_MGMT,
+            f"Deleting user {user.email} with {campaigns_count} campaigns and {connections_count} connections",
+            level="INFO"
+        )
         
         # Delete associated data first (campaigns, connections, etc.)
         # Delete user's campaigns
-        db.query(Campaign).filter(Campaign.user_id == user_id).delete()
+        deleted_campaigns = db.query(Campaign).filter(Campaign.user_id == user_id).delete()
         
         # Delete user's connections
-        db.query(Connection).filter(Connection.user_id == user_id).delete()
+        deleted_connections = db.query(Connection).filter(Connection.user_id == user_id).delete()
         
         # Delete the user
         db.delete(user)
         db.commit()
+        
+        logging_service.log(
+            LogModule.USER_MGMT,
+            f"Successfully deleted user {user.email}, {deleted_campaigns} campaigns, {deleted_connections} connections",
+            level="INFO"
+        )
         
         log_admin_action(
             admin_service, current_admin, request,
@@ -517,24 +549,35 @@ async def delete_user(
             resource_type="user",
             resource_id=user_id,
             description=f"Deleted user: {user.email}",
-            changes={"deleted_user": user.email}
+            changes={
+                "deleted_user": user.email,
+                "deleted_campaigns": deleted_campaigns,
+                "deleted_connections": deleted_connections
+            }
         )
         
-        return SuccessResponse(message="User deleted successfully")
+        return SuccessResponse(message=f"User {user.email} deleted successfully")
         
     except HTTPException:
         raise
     except Exception as e:
+        error_msg = str(e)
+        logging_service.log(
+            LogModule.USER_MGMT,
+            f"Delete user {user_id} failed with error: {error_msg}",
+            level="ERROR"
+        )
+        
         log_admin_action(
             admin_service, current_admin, request,
             action="delete",
             resource_type="user",
             resource_id=user_id,
-            description="Failed to delete user",
+            description=f"Failed to delete user: {error_msg}",
             success=False,
-            error_message=str(e)
+            error_message=error_msg
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {error_msg}")
 
 
 # ============================================================================

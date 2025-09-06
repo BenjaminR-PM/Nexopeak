@@ -334,8 +334,18 @@ export default function UserManagementPage() {
     if (!userToDelete) return
 
     setDeleting(true)
+    console.log('🗑️ Attempting to delete user:', userToDelete.id, userToDelete.email)
+    
     try {
       const token = localStorage.getItem('access_token')
+      if (!token) {
+        setError('No authentication token found. Please log in again.')
+        setDeleting(false)
+        return
+      }
+
+      console.log('🔑 Token exists, making DELETE request to:', `${apiUrl}/api/v1/admin/users/${userToDelete.id}`)
+
       const response = await fetch(`${apiUrl}/api/v1/admin/users/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {
@@ -344,18 +354,35 @@ export default function UserManagementPage() {
         }
       })
 
+      console.log('📡 Delete response status:', response.status)
+      console.log('📡 Delete response ok:', response.ok)
+
       if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Delete successful:', data)
         setSuccess(`User ${userToDelete.name || userToDelete.email} deleted successfully!`)
         setDeleteDialogOpen(false)
         setUserToDelete(null)
         fetchUsers() // Refresh the list
       } else {
-        const errorData = await response.json()
-        setError(errorData.detail || 'Failed to delete user')
+        let errorMessage = 'Failed to delete user'
+        try {
+          const errorData = await response.json()
+          console.log('❌ Delete error response:', errorData)
+          errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        } catch (parseError) {
+          console.log('❌ Could not parse error response, using status:', response.status, response.statusText)
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+        setError(errorMessage)
       }
     } catch (error) {
-      console.error('Error deleting user:', error)
-      setError('Failed to delete user. Please try again.')
+      console.error('❌ Network error deleting user:', error)
+      if (error instanceof Error) {
+        setError(`Network error: ${error.message}`)
+      } else {
+        setError('Network error: Failed to connect to server. Please check your connection.')
+      }
     } finally {
       setDeleting(false)
     }
